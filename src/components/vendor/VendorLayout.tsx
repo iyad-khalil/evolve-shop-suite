@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Package, 
@@ -10,12 +10,41 @@ import {
   LogOut,
   Home
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
+import { Loading } from '@/components/ui/Loading';
 
 export const VendorLayout: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, profile, signOut, loading } = useAuth();
   const location = useLocation();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loading size="lg" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  if (profile?.role !== 'vendor') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Accès non autorisé</h1>
+          <p className="text-gray-600 mb-4">
+            Vous devez avoir un compte vendeur pour accéder à cette section.
+          </p>
+          <Link to="/auth">
+            <Button>Créer un compte vendeur</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const navigation = [
     { name: 'Tableau de bord', href: '/vendor', icon: LayoutDashboard },
@@ -69,12 +98,14 @@ export const VendorLayout: React.FC = () => {
             <div className="flex items-center space-x-3 mb-4">
               <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
                 <span className="text-white text-sm font-medium">
-                  {user?.name.charAt(0).toUpperCase()}
+                  {profile?.first_name?.charAt(0).toUpperCase() || 'V'}
                 </span>
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                <p className="text-xs text-gray-500">{user?.email}</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {profile?.first_name} {profile?.last_name}
+                </p>
+                <p className="text-xs text-gray-500">{profile?.email}</p>
               </div>
             </div>
 
@@ -88,7 +119,7 @@ export const VendorLayout: React.FC = () => {
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={logout}
+                onClick={signOut}
                 className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
               >
                 <LogOut className="mr-2 h-4 w-4" />
@@ -110,7 +141,7 @@ export const VendorLayout: React.FC = () => {
               </div>
               <span className="text-lg font-bold text-gray-900">Vendeur</span>
             </div>
-            <Button variant="outline" size="sm" onClick={logout}>
+            <Button variant="outline" size="sm" onClick={signOut}>
               <LogOut className="h-4 w-4" />
             </Button>
           </div>

@@ -1,15 +1,15 @@
 
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingCart, User, Search, Menu, X } from 'lucide-react';
+import { ShoppingCart, User, Search, Menu, X, Store } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 
 export const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { itemCount } = useCart();
-  const { user, logout } = useAuth();
+  const { user, profile, signOut, loading } = useAuth();
   const location = useLocation();
 
   const isVendorRoute = location.pathname.startsWith('/vendor');
@@ -17,6 +17,10 @@ export const Header: React.FC = () => {
   if (isVendorRoute) {
     return null; // Don't show header on vendor pages
   }
+
+  const handleLogout = async () => {
+    await signOut();
+  };
 
   return (
     <header className="bg-white shadow-sm border-b sticky top-0 z-50">
@@ -70,15 +74,29 @@ export const Header: React.FC = () => {
             </Link>
 
             {/* User Menu */}
-            {user ? (
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-700">Bonjour, {user.name}</span>
-                <Button variant="outline" size="sm" onClick={logout}>
+            {loading ? (
+              <div className="animate-pulse">
+                <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
+              </div>
+            ) : user ? (
+              <div className="flex items-center space-x-3">
+                <span className="text-sm text-gray-700">
+                  Bonjour, {profile?.first_name || 'Utilisateur'}
+                </span>
+                {profile?.role === 'vendor' && (
+                  <Link to="/vendor">
+                    <Button variant="outline" size="sm">
+                      <Store className="w-4 h-4 mr-2" />
+                      Mon espace vendeur
+                    </Button>
+                  </Link>
+                )}
+                <Button variant="outline" size="sm" onClick={handleLogout}>
                   Déconnexion
                 </Button>
               </div>
             ) : (
-              <Link to="/login">
+              <Link to="/auth">
                 <Button size="sm">
                   <User className="w-4 h-4 mr-2" />
                   Connexion
