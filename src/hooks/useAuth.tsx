@@ -32,18 +32,23 @@ export const useAuth = (): AuthHook => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state change:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
           // Fetch user profile
-          const { data: profileData } = await supabase
+          const { data: profileData, error } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', session.user.id)
             .single();
           
-          setProfile(profileData);
+          console.log('Profile fetch result:', { profileData, error });
+          
+          if (profileData) {
+            setProfile(profileData);
+          }
         } else {
           setProfile(null);
         }
@@ -63,8 +68,11 @@ export const useAuth = (): AuthHook => {
           .select('*')
           .eq('id', session.user.id)
           .single()
-          .then(({ data: profileData }) => {
-            setProfile(profileData);
+          .then(({ data: profileData, error }) => {
+            console.log('Initial profile fetch:', { profileData, error });
+            if (profileData) {
+              setProfile(profileData);
+            }
             setLoading(false);
           });
       } else {
@@ -76,6 +84,8 @@ export const useAuth = (): AuthHook => {
   }, []);
 
   const signUp = async (email: string, password: string, userData: any) => {
+    console.log('SignUp attempt:', { email, userData });
+    
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -84,14 +94,20 @@ export const useAuth = (): AuthHook => {
         data: userData
       }
     });
+    
+    console.log('SignUp result:', { error });
     return { error };
   };
 
   const signIn = async (email: string, password: string) => {
+    console.log('SignIn attempt:', { email });
+    
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password
     });
+    
+    console.log('SignIn result:', { error });
     return { error };
   };
 
