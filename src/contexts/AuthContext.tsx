@@ -1,22 +1,19 @@
 
 import React, { createContext, useContext } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth as useAuthHook } from '@/hooks/useAuth';
 
-const AuthContext = createContext<ReturnType<typeof useAuth> | undefined>(undefined);
+const AuthContext = createContext<ReturnType<typeof useAuthHook> | undefined>(undefined);
 
-export const useAuthContext = () => {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuthContext must be used within an AuthProvider');
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };
 
-// Alias for backward compatibility
-export const useAuth = useAuthContext;
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const auth = useAuth();
+  const auth = useAuthHook();
   
   return (
     <AuthContext.Provider value={auth}>

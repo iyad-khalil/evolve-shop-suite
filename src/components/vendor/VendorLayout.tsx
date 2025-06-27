@@ -10,7 +10,7 @@ import {
   LogOut,
   Home
 } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/Loading';
 
