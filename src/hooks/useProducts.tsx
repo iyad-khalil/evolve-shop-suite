@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,7 +10,7 @@ export const useProducts = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
-  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');
   const [sortBy, setSortBy] = useState('name');
   const [priceRange, setPriceRange] = useState([0, 5000]);
   const [showFilters, setShowFilters] = useState(false);
@@ -59,7 +60,7 @@ export const useProducts = () => {
         `)
         .eq('is_active', true);
 
-      if (selectedCategory) {
+      if (selectedCategory && selectedCategory !== 'all') {
         console.log('useProducts: Filtering by category:', selectedCategory);
         query = query.eq('category_id', selectedCategory);
       }
@@ -145,7 +146,7 @@ export const useProducts = () => {
   const handleCategoryChange = (value: string) => {
     setSelectedCategory(value);
     const params = new URLSearchParams(searchParams);
-    if (value) {
+    if (value && value !== 'all') {
       params.set('category', value);
     } else {
       params.delete('category');
@@ -155,7 +156,7 @@ export const useProducts = () => {
 
   const clearFilters = () => {
     setSearchTerm('');
-    setSelectedCategory('');
+    setSelectedCategory('all');
     setPriceRange([0, 5000]);
     setSortBy('name');
     setSearchParams(new URLSearchParams());
