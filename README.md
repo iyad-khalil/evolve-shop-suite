@@ -357,26 +357,4 @@ const { user, session } = useAuth();
 - [ ] **Marketplace extensions** : Plugin system
 - [ ] **Advanced AI** : Recommendations personnalisées
 
-## 📞 Support et Contribution
-
-### Contact
-- **Documentation** : [docs.lovable.dev](https://docs.lovable.dev)
-- **Discord Community** : [Lovable Discord](https://discord.com/channels/1119885301872070706/1280461670979993613)
-- **YouTube Tutorials** : [Lovable Playlist](https://www.youtube.com/watch?v=9KHLTZaJcR8&list=PLbVHz4urQBZkJiAWdG8HWoJTdgEysigIO)
-
-### Comment Contribuer
-1. **Fork** le repository
-2. **Créer une branche** feature (`git checkout -b feature/amazing-feature`)
-3. **Commit** les changements (`git commit -m 'Add amazing feature'`)
-4. **Push** vers la branche (`git push origin feature/amazing-feature`)
-5. **Ouvrir une Pull Request**
-
-### Guidelines de Contribution
-- Suivre les conventions de code existantes
-- Ajouter des tests pour les nouvelles fonctionnalités
-- Mettre à jour la documentation si nécessaire
-- Respecter les principes SOLID et DRY
-
----
-
 **Développé avec ❤️ en utilisant Lovable, Supabase et les dernières technologies web**
