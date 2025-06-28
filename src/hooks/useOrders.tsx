@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -61,10 +62,12 @@ export const useOrders = () => {
       throw new Error('Votre panier est vide');
     }
 
-    try {
-      console.log('Creating order with items:', items);
+    setIsCreatingOrder(true);
 
-      // Convertir les items du panier en OrderItem
+    try {
+      console.log('🚀 Creating order and payment with items:', items);
+
+      // Étape 1: Créer d'abord la commande
       const orderItems: OrderItem[] = items.map((item: CartItem) => ({
         productId: item.product.id,
         productName: item.product.name,
@@ -78,12 +81,11 @@ export const useOrders = () => {
         } : undefined
       }));
 
-      // Calculer le total
       const totalAmount = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-      console.log('Order total:', totalAmount);
+      console.log('💰 Order total:', totalAmount);
 
-      // Créer la commande
+      // Créer la commande en base
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -99,43 +101,54 @@ export const useOrders = () => {
         .single();
 
       if (orderError) {
-        console.error('Error creating order:', orderError);
-        throw orderError;
+        console.error('❌ Error creating order:', orderError);
+        throw new Error(`Erreur lors de la création de la commande: ${orderError.message}`);
       }
 
-      console.log('Order created:', orderData);
+      console.log('✅ Order created successfully:', orderData.id);
 
-      // Créer immédiatement la session de paiement
+      setIsProcessingPayment(true);
+
+      // Étape 2: Créer la session de paiement avec l'ID de commande
+      console.log('💳 Creating payment session for order:', orderData.id);
+      
       const { data: paymentData, error: paymentError } = await supabase.functions.invoke('create-payment', {
         body: { orderId: orderData.id, currency }
       });
 
       if (paymentError) {
-        console.error('Payment session error:', paymentError);
-        throw paymentError;
+        console.error('💥 Payment session error:', paymentError);
+        throw new Error(`Erreur lors de la création du paiement: ${paymentError.message}`);
       }
 
-      if (paymentData.url) {
-        // Ouvrir Stripe Checkout dans un nouvel onglet
-        window.open(paymentData.url, '_blank');
-        
-        toast({
-          title: "Redirection vers le paiement",
-          description: "Une nouvelle fenêtre s'est ouverte pour finaliser votre paiement.",
-        });
+      if (!paymentData?.url) {
+        throw new Error('URL de paiement non reçue');
       }
+
+      console.log('✅ Payment session created, redirecting to:', paymentData.url);
+
+      // Ouvrir Stripe Checkout dans un nouvel onglet
+      window.open(paymentData.url, '_blank');
+      
+      toast({
+        title: "Commande créée avec succès !",
+        description: "Une nouvelle fenêtre s'est ouverte pour finaliser votre paiement.",
+      });
 
       // Invalider les requêtes pour rafraîchir les données
       queryClient.invalidateQueries({ queryKey: ['orders'] });
 
     } catch (error) {
-      console.error('Error in createOrderAndPayment:', error);
+      console.error('💥 Error in createOrderAndPayment:', error);
       toast({
         title: "Erreur lors de la commande",
         description: error instanceof Error ? error.message : "Une erreur inattendue s'est produite",
         variant: "destructive",
       });
       throw error;
+    } finally {
+      setIsCreatingOrder(false);
+      setIsProcessingPayment(false);
     }
   };
 
@@ -281,6 +294,8 @@ export const useOrders = () => {
     createOrder,
     createOrderAndPayment,
     createPaymentSession,
-    verifyPayment
+    verifyPayment,
+    isCreatingOrder,
+    isProcessingPayment
   };
 };

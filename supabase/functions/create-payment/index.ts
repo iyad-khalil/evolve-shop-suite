@@ -20,6 +20,8 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🚀 Starting payment creation...');
+
     // Créer le client Supabase avec la clé anon pour l'authentification
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -29,6 +31,7 @@ serve(async (req) => {
     // Récupérer l'utilisateur authentifié
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
+      console.error('❌ No authorization header');
       throw new Error("Authorization header required");
     }
 
@@ -36,32 +39,55 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
     
     if (authError || !user) {
+      console.error('❌ Authentication failed:', authError);
       throw new Error("User not authenticated");
     }
+
+    console.log('✅ User authenticated:', user.email);
 
     // Parse request body
     const { orderId, currency = 'usd' }: PaymentRequest = await req.json();
 
     if (!orderId) {
+      console.error('❌ No order ID provided');
       throw new Error("Order ID is required");
     }
 
+    console.log('📦 Looking for order:', orderId);
+
+    // Utiliser la service role key pour récupérer la commande (bypass RLS)
+    const supabaseService = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
+
     // Récupérer les détails de la commande
-    const { data: order, error: orderError } = await supabaseClient
+    const { data: order, error: orderError } = await supabaseService
       .from('orders')
       .select('*')
       .eq('id', orderId)
       .eq('customer_id', user.id)
       .single();
 
-    if (orderError || !order) {
+    if (orderError) {
+      console.error('❌ Error fetching order:', orderError);
+      throw new Error(`Order fetch error: ${orderError.message}`);
+    }
+
+    if (!order) {
+      console.error('❌ Order not found for user:', user.id, 'order:', orderId);
       throw new Error("Order not found");
     }
+
+    console.log('✅ Order found:', order.id);
 
     // Initialiser Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2023-10-16",
     });
+
+    console.log('💳 Initializing Stripe...');
 
     // Vérifier si un client Stripe existe déjà
     const customers = await stripe.customers.list({ 
@@ -72,13 +98,16 @@ serve(async (req) => {
     let customerId;
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
+      console.log('✅ Existing Stripe customer found:', customerId);
+    } else {
+      console.log('📝 No existing Stripe customer');
     }
 
     // Convertir le montant selon la devise
     const baseAmount = Number(order.total_amount);
     let amount = baseAmount;
     
-    // Taux de change approximatifs (vous pourrez les ajuster ou utiliser une API de taux)
+    // Taux de change approximatifs
     const exchangeRates = {
       usd: 1,
       eur: 0.85,
@@ -86,6 +115,8 @@ serve(async (req) => {
     };
 
     amount = Math.round(baseAmount * exchangeRates[currency]);
+
+    console.log('💰 Amount calculation:', { baseAmount, currency, finalAmount: amount });
 
     // Créer les line items à partir des items de la commande
     const lineItems = (order.items as any[]).map(item => ({
@@ -100,13 +131,15 @@ serve(async (req) => {
       quantity: item.quantity,
     }));
 
+    console.log('🛒 Line items created:', lineItems.length, 'items');
+
     // Créer la session de paiement
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email!,
       line_items: lineItems,
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/order-confirmation/${orderId}?payment=success`,
+      success_url: `${req.headers.get("origin")}/order-confirmation/${orderId}?payment=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.get("origin")}/checkout?payment=cancelled`,
       metadata: {
         orderId: orderId,
@@ -114,13 +147,9 @@ serve(async (req) => {
       }
     });
 
-    // Mettre à jour la commande avec l'ID de session Stripe
-    const supabaseService = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      { auth: { persistSession: false } }
-    );
+    console.log('✅ Stripe session created:', session.id);
 
+    // Mettre à jour la commande avec l'ID de session Stripe
     await supabaseService
       .from('orders')
       .update({ 
@@ -128,6 +157,8 @@ serve(async (req) => {
         updated_at: new Date().toISOString()
       })
       .eq('id', orderId);
+
+    console.log('✅ Order status updated to payment_pending');
 
     return new Response(
       JSON.stringify({ 
@@ -141,7 +172,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Payment creation error:', error);
+    console.error('💥 Payment creation error:', error);
     return new Response(
       JSON.stringify({ 
         error: error instanceof Error ? error.message : "Unknown error occurred" 
