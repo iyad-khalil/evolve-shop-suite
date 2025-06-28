@@ -3,10 +3,12 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 
 export const Cart: React.FC = () => {
   const { items, updateQuantity, removeFromCart, total, clearCart } = useCart();
+  const { user } = useAuth();
 
   if (items.length === 0) {
     return (
@@ -135,9 +137,19 @@ export const Cart: React.FC = () => {
                   Continuer mes achats
                 </Button>
               </Link>
-              <Button className="flex-1" size="lg">
-                Passer la commande
-              </Button>
+              {user ? (
+                <Link to="/checkout" className="flex-1">
+                  <Button className="w-full" size="lg">
+                    Passer commande
+                  </Button>
+                </Link>
+              ) : (
+                <Link to="/auth" className="flex-1">
+                  <Button className="w-full" size="lg">
+                    Se connecter pour commander
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>
