@@ -11,11 +11,14 @@ import { Footer } from "@/components/layout/Footer";
 import { VendorLayout } from "@/components/vendor/VendorLayout";
 import Home from "./pages/Home";
 import Products from "./pages/Products";
+import Categories from "./pages/Categories";
+import ProductDetail from "./pages/ProductDetail";
 import Cart from "./pages/Cart";
 import Auth from "./pages/Auth";
 import VendorDashboard from "./pages/vendor/VendorDashboard";
 import VendorProducts from "./pages/vendor/VendorProducts";
 import AddProduct from "./pages/vendor/AddProduct";
+import EditProduct from "./pages/vendor/EditProduct";
 import VendorOrders from "./pages/vendor/VendorOrders";
 import NotFound from "./pages/NotFound";
 
@@ -36,6 +39,8 @@ const App = () => (
                   {/* Public Routes */}
                   <Route path="/" element={<Home />} />
                   <Route path="/products" element={<Products />} />
+                  <Route path="/categories" element={<Categories />} />
+                  <Route path="/product/:id" element={<ProductDetail />} />
                   <Route path="/cart" element={<Cart />} />
                   <Route path="/auth" element={<Auth />} />
                   
@@ -44,6 +49,7 @@ const App = () => (
                     <Route index element={<VendorDashboard />} />
                     <Route path="products" element={<VendorProducts />} />
                     <Route path="products/new" element={<AddProduct />} />
+                    <Route path="products/edit/:id" element={<EditProduct />} />
                     <Route path="orders" element={<VendorOrders />} />
                   </Route>
                   
