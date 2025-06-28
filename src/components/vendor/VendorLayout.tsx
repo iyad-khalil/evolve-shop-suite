@@ -12,7 +12,18 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Loading } from '@/components/ui/Loading';
+
+const Loading = ({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) => {
+  const sizeClasses = {
+    sm: 'w-4 h-4',
+    md: 'w-8 h-8',
+    lg: 'w-12 h-12'
+  };
+  
+  return (
+    <div className={`animate-spin rounded-full border-2 border-blue-600 border-t-transparent ${sizeClasses[size]}`} />
+  );
+};
 
 export const VendorLayout: React.FC = () => {
   const { user, profile, signOut, loading } = useAuth();
