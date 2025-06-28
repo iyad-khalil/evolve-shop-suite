@@ -53,22 +53,25 @@ const ProductDetail: React.FC = () => {
       }
 
       if (data) {
+        // Type assertion pour gérer les propriétés qui pourraient ne pas être dans les types générés
+        const productData = data as any;
+        
         const formattedProduct: Product = {
-          id: data.id,
-          name: data.name,
-          description: data.description || '',
-          price: data.price,
-          originalPrice: data.original_price,
-          image: data.images?.[0] || '/placeholder.svg',
-          images: data.images || ['/placeholder.svg'],
-          category: data.categories?.name || 'Électronique',
-          stock: data.stock,
-          rating: data.rating || 4.5,
-          reviews: data.reviews_count || 0,
-          tags: data.tags || [],
-          createdAt: new Date(data.created_at),
-          updatedAt: new Date(data.updated_at),
-          specifications: data.specifications as ElectronicsSpecifications || {}
+          id: productData.id,
+          name: productData.name,
+          description: productData.description || '',
+          price: productData.price,
+          originalPrice: productData.original_price,
+          image: productData.images?.[0] || '/placeholder.svg',
+          images: productData.images || ['/placeholder.svg'],
+          category: productData.categories?.name || 'Électronique',
+          stock: productData.stock,
+          rating: productData.rating || 4.5,
+          reviews: productData.reviews_count || 0,
+          tags: productData.tags || [],
+          createdAt: new Date(productData.created_at),
+          updatedAt: new Date(productData.updated_at),
+          specifications: (productData.specifications as ElectronicsSpecifications) || {}
         };
         setProduct(formattedProduct);
       }
