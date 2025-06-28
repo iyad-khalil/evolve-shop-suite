@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -136,7 +135,10 @@ export const AddProduct: React.FC = () => {
   };
 
   // Fonctions IA
-  const addCharacteristic = () => {
+  const addCharacteristic = (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault(); // Empêcher la soumission du formulaire
+    }
     if (newCharacteristic.trim() && !characteristics.includes(newCharacteristic.trim())) {
       setCharacteristics([...characteristics, newCharacteristic.trim()]);
       setNewCharacteristic('');
@@ -400,9 +402,14 @@ export const AddProduct: React.FC = () => {
                         value={newCharacteristic}
                         onChange={(e) => setNewCharacteristic(e.target.value)}
                         placeholder="Ajouter une caractéristique"
-                        onKeyPress={(e) => e.key === 'Enter' && addCharacteristic()}
+                        onKeyPress={(e) => e.key === 'Enter' && addCharacteristic(e)}
                       />
-                      <Button onClick={addCharacteristic} size="sm" variant="outline">
+                      <Button 
+                        onClick={addCharacteristic} 
+                        size="sm" 
+                        variant="outline"
+                        type="button"
+                      >
                         <Plus className="w-4 h-4" />
                       </Button>
                     </div>
