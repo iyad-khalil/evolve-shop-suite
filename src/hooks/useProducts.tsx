@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,34 +15,39 @@ export const useProducts = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
+    console.log('useProducts: Starting to fetch data');
     fetchCategories();
     fetchProducts();
   }, []);
 
   useEffect(() => {
+    console.log('useProducts: Dependencies changed, refetching products');
     fetchProducts();
   }, [selectedCategory, searchTerm, sortBy]);
 
   const fetchCategories = async () => {
     try {
+      console.log('useProducts: Fetching categories...');
       const { data, error } = await supabase
         .from('categories')
         .select('*')
         .order('name');
 
       if (error) {
-        console.error('Error fetching categories:', error);
+        console.error('useProducts: Error fetching categories:', error);
         return;
       }
 
+      console.log('useProducts: Categories fetched successfully:', data);
       setCategories(data || []);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('useProducts: Exception in fetchCategories:', error);
     }
   };
 
   const fetchProducts = async () => {
     try {
+      console.log('useProducts: Fetching products...');
       let query = supabase
         .from('products')
         .select(`
@@ -56,10 +60,12 @@ export const useProducts = () => {
         .eq('is_active', true);
 
       if (selectedCategory) {
+        console.log('useProducts: Filtering by category:', selectedCategory);
         query = query.eq('category_id', selectedCategory);
       }
 
       if (searchTerm) {
+        console.log('useProducts: Filtering by search term:', searchTerm);
         query = query.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
       }
 
@@ -81,12 +87,15 @@ export const useProducts = () => {
           query = query.order('name', { ascending: true });
       }
 
+      console.log('useProducts: Executing query...');
       const { data, error } = await query;
 
       if (error) {
-        console.error('Error fetching products:', error);
+        console.error('useProducts: Error fetching products:', error);
         return;
       }
+
+      console.log('useProducts: Products fetched from database:', data);
 
       const formattedProducts: Product[] = (data || []).map(item => ({
         id: item.id,
@@ -105,15 +114,19 @@ export const useProducts = () => {
         updatedAt: new Date(item.updated_at),
       }));
 
+      console.log('useProducts: Formatted products:', formattedProducts);
+
       // Filter by price range
       const filteredProducts = formattedProducts.filter(
         product => product.price >= priceRange[0] && product.price <= priceRange[1]
       );
 
+      console.log('useProducts: Final filtered products:', filteredProducts);
       setProducts(filteredProducts);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('useProducts: Exception in fetchProducts:', error);
     } finally {
+      console.log('useProducts: Setting loading to false');
       setLoading(false);
     }
   };
