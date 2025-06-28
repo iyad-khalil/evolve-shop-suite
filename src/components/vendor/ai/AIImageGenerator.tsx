@@ -51,7 +51,8 @@ export const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({
     setIsGenerating(true);
     try {
       // Créer un prompt spécifique basé sur le nom du produit et le style
-      const basePrompt = `${productName}, ${imageStyles.find(s => s.id === imageStyle)?.description || 'professional product photo'}`;
+      const styleDescription = imageStyles.find(s => s.id === imageStyle)?.description || 'professional product photo';
+      const basePrompt = `${productName}, ${styleDescription}`;
       const finalPrompt = customPrompt ? `${basePrompt}, ${customPrompt}` : basePrompt;
       
       console.log('Generating images with prompt:', finalPrompt);
@@ -63,7 +64,7 @@ export const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({
       const productType = productName.toLowerCase();
       let newGeneratedImages: string[] = [];
       
-      if (productType.includes('pc') || productType.includes('ordinateur') || productType.includes('computer')) {
+      if (productType.includes('pc') || productType.includes('ordinateur') || productType.includes('computer') || productType.includes('dell')) {
         newGeneratedImages = [
           'https://images.unsplash.com/photo-1587831990711-23ca6441447b?w=400', // PC setup
           'https://images.unsplash.com/photo-1593640408182-31c70c8268f5?w=400', // Desktop computer
@@ -95,21 +96,32 @@ export const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({
   };
 
   const toggleImageSelection = (imageUrl: string) => {
-    setSelectedImages(prev => {
-      const newSelection = prev.includes(imageUrl) 
-        ? prev.filter(url => url !== imageUrl)
-        : [...prev, imageUrl];
-      
-      // Mettre à jour le formulaire avec les images sélectionnées
-      form.setValue('images', newSelection);
-      return newSelection;
-    });
+    const newSelection = selectedImages.includes(imageUrl) 
+      ? selectedImages.filter(url => url !== imageUrl)
+      : [...selectedImages, imageUrl];
+    
+    setSelectedImages(newSelection);
+    
+    // Mettre à jour le formulaire avec les images sélectionnées
+    // Combiner avec les images déjà uploadées depuis le composant ProductImageUpload
+    const currentFormImages = form.getValues('images') || [];
+    const uploadedImages = currentFormImages.filter(img => !generatedImages.includes(img));
+    const allImages = [...uploadedImages, ...newSelection];
+    form.setValue('images', allImages);
   };
 
   const removeGeneratedImage = (imageUrl: string) => {
-    setGeneratedImages(prev => prev.filter(url => url !== imageUrl));
-    setSelectedImages(prev => prev.filter(url => url !== imageUrl));
-    form.setValue('images', selectedImages.filter(url => url !== imageUrl));
+    const newGeneratedImages = generatedImages.filter(url => url !== imageUrl);
+    setGeneratedImages(newGeneratedImages);
+    
+    const newSelectedImages = selectedImages.filter(url => url !== imageUrl);
+    setSelectedImages(newSelectedImages);
+    
+    // Mettre à jour le formulaire
+    const currentFormImages = form.getValues('images') || [];
+    const uploadedImages = currentFormImages.filter(img => !generatedImages.includes(img));
+    const allImages = [...uploadedImages, ...newSelectedImages];
+    form.setValue('images', allImages);
   };
 
   return (
