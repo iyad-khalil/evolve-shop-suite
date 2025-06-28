@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -11,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProductBasicInfo } from '@/components/vendor/ProductBasicInfo';
 import { AIDescriptionGenerator } from '@/components/vendor/ai/AIDescriptionGenerator';
-import { AIImageGenerator } from '@/components/vendor/ai/AIImageGenerator';
+import { AIImageEnhancer } from '@/components/vendor/ai/AIImageEnhancer';
 import { AIPerformanceAnalysis } from '@/components/vendor/ai/AIPerformanceAnalysis';
 import { AITranslation } from '@/components/vendor/ai/AITranslation';
 
@@ -31,7 +30,7 @@ export const AddProduct: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('basic');
   const [isLoading, setIsLoading] = useState(false);
-  const [generatedImages, setGeneratedImages] = useState<string[]>([]);
+  const [enhancedImages, setEnhancedImages] = useState<string[]>([]);
   const [performanceScore, setPerformanceScore] = useState<number | null>(null);
   
   const form = useForm<ProductFormData>({
@@ -160,10 +159,13 @@ export const AddProduct: React.FC = () => {
             <TabsContent value="ai-tools" className="space-y-6">
               <AIDescriptionGenerator form={form} />
               
-              <AIImageGenerator 
-                form={form}
-                generatedImages={generatedImages}
-                setGeneratedImages={setGeneratedImages}
+              <AIImageEnhancer 
+                onImagesProcessed={(images) => {
+                  setEnhancedImages(images);
+                  // Combiner avec les images existantes du formulaire
+                  const currentImages = form.getValues('images') || [];
+                  form.setValue('images', [...currentImages, ...images]);
+                }}
               />
 
               <AIPerformanceAnalysis 
