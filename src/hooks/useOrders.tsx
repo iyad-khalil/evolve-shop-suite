@@ -38,9 +38,9 @@ export const useOrders = () => {
         customerId: order.customer_id,
         customerEmail: order.customer_email || '',
         customerName: order.customer_name || '',
-        items: (order.items as OrderItem[]) || [],
+        items: (order.items as unknown as OrderItem[]) || [],
         totalAmount: Number(order.total_amount),
-        shippingAddress: order.shipping_address as ShippingAddress,
+        shippingAddress: order.shipping_address as unknown as ShippingAddress,
         status: order.status as Order['status'],
         createdAt: order.created_at || '',
         updatedAt: order.updated_at || ''
@@ -69,6 +69,42 @@ export const useOrders = () => {
     });
 
     return { vendorGroups, vendorInfo };
+  };
+
+  // Vérifier le statut du paiement
+  const verifyPayment = async (sessionId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-payment', {
+        body: { sessionId }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.status === 'paid') {
+        // Vider le panier après paiement réussi
+        clearCart();
+        
+        // Invalider les requêtes
+        queryClient.invalidateQueries({ queryKey: ['orders'] });
+        
+        toast({
+          title: "Paiement confirmé !",
+          description: "Votre commande a été payée avec succès.",
+        });
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error verifying payment:', error);
+      toast({
+        title: "Erreur de vérification",
+        description: "Impossible de vérifier le statut du paiement",
+        variant: "destructive",
+      });
+      throw error;
+    }
   };
 
   // Créer une commande ET créer le paiement en une seule action
@@ -182,148 +218,13 @@ export const useOrders = () => {
     }
   };
 
-  // Créer une commande (fonction séparée si besoin)
-  const createOrder = async (shippingAddress: ShippingAddress): Promise<string> => {
-    if (!user) {
-      throw new Error('Vous devez être connecté pour passer une commande');
-    }
-
-    if (items.length === 0) {
-      throw new Error('Votre panier est vide');
-    }
-
-    try {
-      // Convertir les items du panier en OrderItem
-      const orderItems: OrderItem[] = items.map((item: CartItem) => ({
-        productId: item.product.id,
-        productName: item.product.name,
-        productImage: item.product.image,
-        price: item.variant?.price || item.product.price,
-        quantity: item.quantity,
-        variant: item.variant ? {
-          id: item.variant.id,
-          name: item.variant.name,
-          value: item.variant.value
-        } : undefined
-      }));
-
-      // Calculer le total
-      const totalAmount = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
-      // Insérer la commande avec les types corrects
-      const { data, error } = await supabase
-        .from('orders')
-        .insert({
-          customer_id: user.id,
-          customer_email: shippingAddress.email,
-          customer_name: `${shippingAddress.firstName} ${shippingAddress.lastName}`,
-          items: orderItems as any,
-          total_amount: totalAmount,
-          shipping_address: shippingAddress as any,
-          status: 'pending'
-        } as any)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating order:', error);
-        throw error;
-      }
-
-      // Vider le panier après la commande
-      clearCart();
-
-      // Invalider les requêtes pour rafraîchir les données
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-
-      toast({
-        title: "Commande créée avec succès !",
-        description: `Votre commande #${data.id.slice(0, 8)} a été enregistrée.`,
-      });
-
-      return data.id;
-    } catch (error) {
-      console.error('Error in createOrder:', error);
-      toast({
-        title: "Erreur lors de la création de la commande",
-        description: error instanceof Error ? error.message : "Une erreur inattendue s'est produite",
-        variant: "destructive",
-      });
-      throw error;
-    }
-  };
-
-  // Créer une session de paiement Stripe (fonction indépendante)
-  const createPaymentSession = async (orderId: string, currency: 'usd' | 'eur' | 'mad' = 'usd') => {
-    try {
-      const { data, error } = await supabase.functions.invoke('create-payment', {
-        body: { orderId, currency }
-      });
-
-      if (error) {
-        console.error('Payment session error:', error);
-        throw error;
-      }
-
-      if (data.url) {
-        // Ouvrir Stripe Checkout dans un nouvel onglet
-        window.open(data.url, '_blank');
-      }
-
-      return data;
-    } catch (error) {
-      console.error('Error creating payment session:', error);
-      toast({
-        title: "Erreur de paiement",
-        description: error instanceof Error ? error.message : "Impossible de créer la session de paiement",
-        variant: "destructive",
-      });
-      throw error;
-    }
-  };
-
-  // Vérifier le statut du paiement
-  const verifyPayment = async (sessionId: string) => {
-    try {
-      const { data, error } = await supabase.functions.invoke('verify-payment', {
-        body: { sessionId }
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      if (data.status === 'paid') {
-        // Vider le panier après paiement réussi
-        clearCart();
-        
-        // Invalider les requêtes
-        queryClient.invalidateQueries({ queryKey: ['orders'] });
-        
-        toast({
-          title: "Paiement confirmé !",
-          description: "Votre commande a été payée avec succès.",
-        });
-      }
-
-      return data;
-    } catch (error) {
-      console.error('Error verifying payment:', error);
-      toast({
-        title: "Erreur de vérification",
-        description: "Impossible de vérifier le statut du paiement",
-        variant: "destructive",
-      });
-      throw error;
-    }
-  };
-
   return {
     orders,
     isLoading,
     createOrderAndPayment,
     isCreatingOrder,
     isProcessingPayment,
-    analyzeCartVendors
+    analyzeCartVendors,
+    verifyPayment
   };
 };
