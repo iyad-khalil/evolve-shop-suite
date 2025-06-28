@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -28,92 +28,145 @@ export const useAuth = (): AuthHook => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Memoize la fonction pour éviter les re-renders inutiles
+  const fetchUserProfile = useCallback(async (userId: string) => {
+    try {
+      const { data: profileData, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return null;
+      }
+
+      return profileData;
+    } catch (error) {
+      console.error('Exception fetching profile:', error);
+      return null;
+    }
+  }, []);
+
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state change:', event, session?.user?.id);
-        setSession(session);
-        setUser(session?.user ?? null);
+    let isMounted = true;
+
+    // Configuration de l'état d'authentification initial
+    const initializeAuth = async () => {
+      try {
+        // Récupérer la session actuelle
+        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
         
-        if (session?.user) {
-          // Fetch user profile
-          const { data: profileData, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
+        if (error) {
+          console.error('Error getting session:', error);
+        }
+
+        if (isMounted) {
+          setSession(currentSession);
+          setUser(currentSession?.user ?? null);
           
-          console.log('Profile fetch result:', { profileData, error });
-          
-          if (profileData) {
-            setProfile(profileData);
+          if (currentSession?.user) {
+            const profileData = await fetchUserProfile(currentSession.user.id);
+            if (isMounted && profileData) {
+              setProfile(profileData);
+            }
           }
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    // Configurer le listener pour les changements d'état
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, newSession) => {
+        if (!isMounted) return;
+
+        console.log('Auth state change:', event, newSession?.user?.id);
+        
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
+        
+        if (newSession?.user) {
+          // Utiliser setTimeout pour éviter les conflits avec les listeners
+          setTimeout(async () => {
+            if (isMounted) {
+              const profileData = await fetchUserProfile(newSession.user.id);
+              if (isMounted && profileData) {
+                setProfile(profileData);
+              }
+            }
+          }, 100);
         } else {
           setProfile(null);
         }
         
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     );
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single()
-          .then(({ data: profileData, error }) => {
-            console.log('Initial profile fetch:', { profileData, error });
-            if (profileData) {
-              setProfile(profileData);
-            }
-            setLoading(false);
-          });
-      } else {
-        setLoading(false);
-      }
-    });
+    // Initialiser l'authentification
+    initializeAuth();
 
-    return () => subscription.unsubscribe();
-  }, []);
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, [fetchUserProfile]);
 
-  const signUp = async (email: string, password: string, userData: any) => {
+  const signUp = useCallback(async (email: string, password: string, userData: any) => {
     console.log('SignUp attempt:', { email, userData });
     
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/`,
-        data: userData
-      }
-    });
-    
-    console.log('SignUp result:', { error });
-    return { error };
-  };
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: userData
+        }
+      });
+      
+      console.log('SignUp result:', { error });
+      return { error };
+    } catch (error) {
+      console.error('SignUp exception:', error);
+      return { error };
+    }
+  }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string) => {
     console.log('SignIn attempt:', { email });
     
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-    
-    console.log('SignIn result:', { error });
-    return { error };
-  };
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      console.log('SignIn result:', { error });
+      return { error };
+    } catch (error) {
+      console.error('SignIn exception:', error);
+      return { error };
+    }
+  }, []);
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
-  };
+  const signOut = useCallback(async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('SignOut exception:', error);
+    }
+  }, []);
 
   return {
     user,
