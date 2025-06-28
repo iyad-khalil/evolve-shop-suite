@@ -50,6 +50,7 @@ export const AddProduct: React.FC = () => {
   // États pour les fonctionnalités IA
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
   const [isGeneratingImages, setIsGeneratingImages] = useState(false);
+  const [generatedImages, setGeneratedImages] = useState<string[]>([]);
   const [performanceScore, setPerformanceScore] = useState<number | null>(null);
   const [characteristics, setCharacteristics] = useState<string[]>([]);
   const [newCharacteristic, setNewCharacteristic] = useState('');
@@ -100,18 +101,24 @@ export const AddProduct: React.FC = () => {
     try {
       console.log('Submitting product data:', data);
       
+      // Inclure les images générées dans les données
+      const productData = {
+        ...data,
+        images: generatedImages.length > 0 ? generatedImages : data.images
+      };
+      
       const { data: insertedProduct, error } = await supabase
         .from('products')
         .insert({
-          name: data.name,
-          description: data.description,
-          price: Number(data.price),
-          original_price: data.original_price ? Number(data.original_price) : null,
+          name: productData.name,
+          description: productData.description,
+          price: Number(productData.price),
+          original_price: productData.original_price ? Number(productData.original_price) : null,
           vendor_id: user.id,
-          category_id: data.category_id || null,
-          stock: Number(data.stock),
-          tags: data.tags,
-          images: data.images,
+          category_id: productData.category_id || null,
+          stock: Number(productData.stock),
+          tags: productData.tags,
+          images: productData.images,
           is_active: true
         })
         .select()
@@ -137,7 +144,7 @@ export const AddProduct: React.FC = () => {
   // Fonctions IA
   const addCharacteristic = (e?: React.FormEvent) => {
     if (e) {
-      e.preventDefault(); // Empêcher la soumission du formulaire
+      e.preventDefault();
     }
     if (newCharacteristic.trim() && !characteristics.includes(newCharacteristic.trim())) {
       setCharacteristics([...characteristics, newCharacteristic.trim()]);
@@ -179,12 +186,13 @@ export const AddProduct: React.FC = () => {
     setIsGeneratingImages(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 3000));
-      const generatedImages = [
+      const newGeneratedImages = [
         'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400',
         'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400',
         'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=400'
       ];
-      form.setValue('images', generatedImages);
+      setGeneratedImages(newGeneratedImages);
+      form.setValue('images', newGeneratedImages);
       toast.success('Images générées avec succès !');
     } catch (error) {
       toast.error('Erreur lors de la génération des images');
@@ -456,6 +464,7 @@ export const AddProduct: React.FC = () => {
                     onClick={handleGenerateDescription}
                     disabled={!form.watch('name')?.trim() || isGeneratingDescription}
                     className="w-full bg-gradient-to-r from-purple-600 to-pink-600"
+                    type="button"
                   >
                     {isGeneratingDescription ? (
                       <>
@@ -521,6 +530,7 @@ export const AddProduct: React.FC = () => {
                     onClick={handleGenerateImages}
                     disabled={!form.watch('name')?.trim() || isGeneratingImages}
                     className="w-full bg-gradient-to-r from-green-600 to-emerald-600"
+                    type="button"
                   >
                     {isGeneratingImages ? (
                       <>
@@ -534,6 +544,40 @@ export const AddProduct: React.FC = () => {
                       </>
                     )}
                   </Button>
+
+                  {/* Images générées */}
+                  {generatedImages.length > 0 && (
+                    <div className="space-y-3 pt-4 border-t">
+                      <h4 className="font-medium text-gray-900">Images générées :</h4>
+                      <div className="grid grid-cols-3 gap-3">
+                        {generatedImages.map((imageUrl, index) => (
+                          <Card key={index} className="relative group">
+                            <CardContent className="p-2">
+                              <div className="aspect-square rounded overflow-hidden">
+                                <img 
+                                  src={imageUrl} 
+                                  alt={`Image générée ${index + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity rounded flex items-center justify-center space-x-2">
+                                <Button size="sm" variant="secondary">
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                                <Button size="sm" variant="secondary">
+                                  <Download className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="text-xs text-gray-500 mt-2">
+                    📸 Les images sont générées en haute résolution (1024x1024) et optimisées pour le e-commerce.
+                  </div>
                 </CardContent>
               </Card>
 
@@ -550,6 +594,7 @@ export const AddProduct: React.FC = () => {
                     onClick={handleAnalyzePerformance}
                     disabled={!form.watch('name')?.trim()}
                     className="w-full bg-gradient-to-r from-blue-600 to-indigo-600"
+                    type="button"
                   >
                     <BarChart3 className="w-4 h-4 mr-2" />
                     Lancer l'analyse prédictive
