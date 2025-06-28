@@ -34,14 +34,14 @@ const OrderConfirmation: React.FC = () => {
       return {
         id: data.id,
         customerId: data.customer_id,
-        customerEmail: data.customer_email,
-        customerName: data.customer_name,
-        items: data.items,
+        customerEmail: (data as any).customer_email || '',
+        customerName: (data as any).customer_name || '',
+        items: (data as any).items || [],
         totalAmount: Number(data.total_amount),
-        shippingAddress: data.shipping_address,
-        status: data.status,
-        createdAt: data.created_at,
-        updatedAt: data.updated_at
+        shippingAddress: data.shipping_address as unknown as Order['shippingAddress'],
+        status: data.status as Order['status'],
+        createdAt: data.created_at || '',
+        updatedAt: data.updated_at || ''
       } as Order;
     },
     enabled: !!orderId && !!user

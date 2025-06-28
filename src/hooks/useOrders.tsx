@@ -35,14 +35,14 @@ export const useOrders = () => {
       return data.map(order => ({
         id: order.id,
         customerId: order.customer_id,
-        customerEmail: order.customer_email,
-        customerName: order.customer_name,
-        items: order.items as OrderItem[],
+        customerEmail: (order as any).customer_email || '',
+        customerName: (order as any).customer_name || '',
+        items: (order as any).items as OrderItem[] || [],
         totalAmount: Number(order.total_amount),
-        shippingAddress: order.shipping_address as ShippingAddress,
-        status: order.status,
-        createdAt: order.created_at,
-        updatedAt: order.updated_at
+        shippingAddress: order.shipping_address as unknown as ShippingAddress,
+        status: order.status as Order['status'],
+        createdAt: order.created_at || '',
+        updatedAt: order.updated_at || ''
       })) as Order[];
     },
     enabled: !!user
@@ -78,18 +78,18 @@ export const useOrders = () => {
       // Calculer le total
       const totalAmount = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-      // Insérer la commande
+      // Insérer la commande avec les types corrects
       const { data, error } = await supabase
         .from('orders')
         .insert({
           customer_id: user.id,
           customer_email: shippingAddress.email,
           customer_name: `${shippingAddress.firstName} ${shippingAddress.lastName}`,
-          items: orderItems,
+          items: orderItems as any,
           total_amount: totalAmount,
-          shipping_address: shippingAddress,
+          shipping_address: shippingAddress as any,
           status: 'pending'
-        })
+        } as any)
         .select()
         .single();
 
