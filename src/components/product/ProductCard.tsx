@@ -5,6 +5,7 @@ import { Star, ShoppingCart } from 'lucide-react';
 import { Product } from '@/types';
 import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 interface ProductCardProps {
   product: Product;
@@ -12,10 +13,19 @@ interface ProductCardProps {
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { addToCart } = useCart();
+  const { toast } = useToast();
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('Adding product to cart:', product);
     addToCart(product);
+    
+    toast({
+      title: "Produit ajouté au panier",
+      description: `${product.name} a été ajouté à votre panier.`,
+    });
   };
 
   return (

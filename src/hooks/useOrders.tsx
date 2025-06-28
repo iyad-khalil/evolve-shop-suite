@@ -48,8 +48,11 @@ export const useOrders = () => {
     enabled: !!user
   });
 
-  // Créer une commande
-  const createOrder = async (shippingAddress: ShippingAddress): Promise<string> => {
+  // Créer une commande ET créer le paiement en une seule action
+  const createOrderAndPayment = async (
+    shippingAddress: ShippingAddress, 
+    currency: 'usd' | 'eur' | 'mad' = 'usd'
+  ): Promise<void> => {
     if (!user) {
       throw new Error('Vous devez être connecté pour passer une commande');
     }
@@ -58,7 +61,93 @@ export const useOrders = () => {
       throw new Error('Votre panier est vide');
     }
 
-    setIsCreatingOrder(true);
+    try {
+      console.log('Creating order with items:', items);
+
+      // Convertir les items du panier en OrderItem
+      const orderItems: OrderItem[] = items.map((item: CartItem) => ({
+        productId: item.product.id,
+        productName: item.product.name,
+        productImage: item.product.image,
+        price: item.variant?.price || item.product.price,
+        quantity: item.quantity,
+        variant: item.variant ? {
+          id: item.variant.id,
+          name: item.variant.name,
+          value: item.variant.value
+        } : undefined
+      }));
+
+      // Calculer le total
+      const totalAmount = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+      console.log('Order total:', totalAmount);
+
+      // Créer la commande
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          customer_id: user.id,
+          customer_email: shippingAddress.email,
+          customer_name: `${shippingAddress.firstName} ${shippingAddress.lastName}`,
+          items: orderItems as any,
+          total_amount: totalAmount,
+          shipping_address: shippingAddress as any,
+          status: 'pending'
+        } as any)
+        .select()
+        .single();
+
+      if (orderError) {
+        console.error('Error creating order:', orderError);
+        throw orderError;
+      }
+
+      console.log('Order created:', orderData);
+
+      // Créer immédiatement la session de paiement
+      const { data: paymentData, error: paymentError } = await supabase.functions.invoke('create-payment', {
+        body: { orderId: orderData.id, currency }
+      });
+
+      if (paymentError) {
+        console.error('Payment session error:', paymentError);
+        throw paymentError;
+      }
+
+      if (paymentData.url) {
+        // Ouvrir Stripe Checkout dans un nouvel onglet
+        window.open(paymentData.url, '_blank');
+        
+        toast({
+          title: "Redirection vers le paiement",
+          description: "Une nouvelle fenêtre s'est ouverte pour finaliser votre paiement.",
+        });
+      }
+
+      // Invalider les requêtes pour rafraîchir les données
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+
+    } catch (error) {
+      console.error('Error in createOrderAndPayment:', error);
+      toast({
+        title: "Erreur lors de la commande",
+        description: error instanceof Error ? error.message : "Une erreur inattendue s'est produite",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  // Créer une commande (fonction séparée si besoin)
+  const createOrder = async (shippingAddress: ShippingAddress): Promise<string> => {
+    if (!user) {
+      throw new Error('Vous devez être connecté pour passer une commande');
+    }
+
+    if (items.length === 0) {
+      throw new Error('Votre panier est vide');
+    }
 
     try {
       // Convertir les items du panier en OrderItem
@@ -118,15 +207,11 @@ export const useOrders = () => {
         variant: "destructive",
       });
       throw error;
-    } finally {
-      setIsCreatingOrder(false);
     }
   };
 
-  // Créer une session de paiement Stripe
+  // Créer une session de paiement Stripe (fonction indépendante)
   const createPaymentSession = async (orderId: string, currency: 'usd' | 'eur' | 'mad' = 'usd') => {
-    setIsProcessingPayment(true);
-    
     try {
       const { data, error } = await supabase.functions.invoke('create-payment', {
         body: { orderId, currency }
@@ -151,8 +236,6 @@ export const useOrders = () => {
         variant: "destructive",
       });
       throw error;
-    } finally {
-      setIsProcessingPayment(false);
     }
   };
 
@@ -196,9 +279,8 @@ export const useOrders = () => {
     orders,
     isLoading,
     createOrder,
-    isCreatingOrder,
+    createOrderAndPayment,
     createPaymentSession,
-    isProcessingPayment,
     verifyPayment
   };
 };

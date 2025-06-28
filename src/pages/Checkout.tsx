@@ -16,9 +16,10 @@ const Checkout: React.FC = () => {
   const navigate = useNavigate();
   const { items, total } = useCart();
   const { user } = useAuth();
-  const { createOrder, isCreatingOrder, createPaymentSession, isProcessingPayment } = useOrders();
+  const { createOrderAndPayment } = useOrders();
 
   const [currency, setCurrency] = useState<'usd' | 'eur' | 'mad'>('usd');
+  const [isProcessing, setIsProcessing] = useState(false);
   const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
     firstName: '',
     lastName: '',
@@ -89,17 +90,20 @@ const Checkout: React.FC = () => {
       return;
     }
 
+    setIsProcessing(true);
+
     try {
-      // Créer la commande d'abord
-      const orderId = await createOrder(shippingAddress);
-      
-      // Puis créer la session de paiement Stripe
-      await createPaymentSession(orderId, currency);
+      console.log('Submitting order with:', { shippingAddress, currency, items });
+      // Créer la commande ET le paiement en une seule fois
+      await createOrderAndPayment(shippingAddress, currency);
       
       // Note: L'utilisateur sera redirigé vers Stripe, 
       // puis vers la page de confirmation après paiement
     } catch (error) {
+      console.error('Checkout error:', error);
       // L'erreur est gérée dans le hook
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -334,10 +338,10 @@ const Checkout: React.FC = () => {
                   onClick={handleSubmit}
                   className="w-full"
                   size="lg"
-                  disabled={isCreatingOrder || isProcessingPayment}
+                  disabled={isProcessing}
                 >
                   <CreditCard className="w-4 h-4 mr-2" />
-                  {isCreatingOrder ? 'Création...' : isProcessingPayment ? 'Redirection...' : 'Payer avec Stripe'}
+                  {isProcessing ? 'Traitement...' : 'Payer avec Stripe'}
                 </Button>
 
                 <p className="text-xs text-gray-500 text-center">
