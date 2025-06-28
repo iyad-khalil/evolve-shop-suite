@@ -1,27 +1,42 @@
 
 import React, { useState } from 'react';
+import { UseFormReturn } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
 import { Wand2, Plus, X, Lightbulb } from 'lucide-react';
+import { toast } from 'sonner';
 
-interface AIDescriptionGeneratorProps {
-  onGenerate: (productName: string, characteristics: string[]) => void;
-  isGenerating: boolean;
-  productName: string;
+interface ProductFormData {
+  name: string;
+  description: string;
+  price: number;
+  original_price?: number;
+  category_id: string;
+  stock: number;
+  tags: string[];
+  images: string[];
 }
 
-export const AIDescriptionGenerator: React.FC<AIDescriptionGeneratorProps> = ({
-  onGenerate,
-  isGenerating,
-  productName
-}) => {
+interface AIDescriptionGeneratorProps {
+  form: UseFormReturn<ProductFormData>;
+}
+
+export const AIDescriptionGenerator: React.FC<AIDescriptionGeneratorProps> = ({ form }) => {
   const [characteristics, setCharacteristics] = useState<string[]>([]);
   const [newCharacteristic, setNewCharacteristic] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  const addCharacteristic = () => {
+  const suggestedCharacteristics = [
+    'Haute qualité', 'Durable', 'Écologique', 'Innovant', 'Pratique',
+    'Élégant', 'Polyvalent', 'Économique', 'Facile à utiliser', 'Tendance'
+  ];
+
+  const addCharacteristic = (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
     if (newCharacteristic.trim() && !characteristics.includes(newCharacteristic.trim())) {
       setCharacteristics([...characteristics, newCharacteristic.trim()]);
       setNewCharacteristic('');
@@ -32,16 +47,25 @@ export const AIDescriptionGenerator: React.FC<AIDescriptionGeneratorProps> = ({
     setCharacteristics(characteristics.filter((_, i) => i !== index));
   };
 
-  const handleGenerate = () => {
-    if (productName.trim()) {
-      onGenerate(productName, characteristics);
+  const handleGenerateDescription = async () => {
+    const productName = form.watch('name');
+    if (!productName.trim()) {
+      toast.error('Veuillez d\'abord saisir le nom du produit');
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      const generatedDescription = `Découvrez ${productName}, un produit d'exception qui combine ${characteristics.join(', ')}. Conçu avec attention aux détails et aux besoins des utilisateurs modernes, ce produit offre une expérience unique et satisfaisante.`;
+      form.setValue('description', generatedDescription);
+      toast.success('Description générée avec succès !');
+    } catch (error) {
+      toast.error('Erreur lors de la génération de la description');
+    } finally {
+      setIsGenerating(false);
     }
   };
-
-  const suggestedCharacteristics = [
-    'Haute qualité', 'Durable', 'Écologique', 'Innovant', 'Pratique',
-    'Élégant', 'Polyvalent', 'Économique', 'Facile à utiliser', 'Tendance'
-  ];
 
   return (
     <Card>
@@ -54,15 +78,6 @@ export const AIDescriptionGenerator: React.FC<AIDescriptionGeneratorProps> = ({
       <CardContent className="space-y-4">
         <div>
           <label className="text-sm font-medium mb-2 block">
-            Nom du produit
-          </label>
-          <p className="text-gray-600 text-sm">
-            {productName || 'Veuillez d\'abord saisir le nom du produit dans l\'onglet "Informations de base"'}
-          </p>
-        </div>
-
-        <div>
-          <label className="text-sm font-medium mb-2 block">
             Caractéristiques du produit
           </label>
           <div className="flex space-x-2 mb-3">
@@ -70,9 +85,14 @@ export const AIDescriptionGenerator: React.FC<AIDescriptionGeneratorProps> = ({
               value={newCharacteristic}
               onChange={(e) => setNewCharacteristic(e.target.value)}
               placeholder="Ajouter une caractéristique"
-              onKeyPress={(e) => e.key === 'Enter' && addCharacteristic()}
+              onKeyPress={(e) => e.key === 'Enter' && addCharacteristic(e)}
             />
-            <Button onClick={addCharacteristic} size="sm" variant="outline">
+            <Button 
+              onClick={addCharacteristic} 
+              size="sm" 
+              variant="outline"
+              type="button"
+            >
               <Plus className="w-4 h-4" />
             </Button>
           </div>
@@ -116,9 +136,10 @@ export const AIDescriptionGenerator: React.FC<AIDescriptionGeneratorProps> = ({
         </div>
 
         <Button
-          onClick={handleGenerate}
-          disabled={!productName.trim() || isGenerating}
+          onClick={handleGenerateDescription}
+          disabled={!form.watch('name')?.trim() || isGenerating}
           className="w-full bg-gradient-to-r from-purple-600 to-pink-600"
+          type="button"
         >
           {isGenerating ? (
             <>
@@ -132,10 +153,6 @@ export const AIDescriptionGenerator: React.FC<AIDescriptionGeneratorProps> = ({
             </>
           )}
         </Button>
-
-        <div className="text-xs text-gray-500 mt-2">
-          💡 L'IA analysera le nom et les caractéristiques pour créer une description optimisée pour le SEO et les ventes.
-        </div>
       </CardContent>
     </Card>
   );

@@ -1,35 +1,47 @@
 
 import React, { useState } from 'react';
+import { UseFormReturn } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { BarChart3, TrendingUp, Target, AlertCircle, CheckCircle, Lightbulb } from 'lucide-react';
+import { BarChart3, Target, AlertCircle, CheckCircle, Lightbulb } from 'lucide-react';
 
-interface ProductData {
+interface ProductFormData {
   name: string;
   description: string;
   price: number;
-  category: string;
+  original_price?: number;
+  category_id: string;
+  stock: number;
+  tags: string[];
+  images: string[];
 }
 
 interface AIPerformanceAnalysisProps {
-  productData: ProductData;
-  onAnalyze: () => void;
+  form: UseFormReturn<ProductFormData>;
   performanceScore: number | null;
+  setPerformanceScore: (score: number) => void;
 }
 
 export const AIPerformanceAnalysis: React.FC<AIPerformanceAnalysisProps> = ({
-  productData,
-  onAnalyze,
-  performanceScore
+  form,
+  performanceScore,
+  setPerformanceScore
 }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  const handleAnalyze = async () => {
+  const handleAnalyzePerformance = async () => {
     setIsAnalyzing(true);
-    await onAnalyze();
-    setIsAnalyzing(false);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      const score = Math.floor(Math.random() * 30) + 70;
+      setPerformanceScore(score);
+    } catch (error) {
+      // Handle error silently for demo
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const getScoreColor = (score: number) => {
@@ -83,20 +95,11 @@ export const AIPerformanceAnalysis: React.FC<AIPerformanceAnalysisProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h4 className="font-medium mb-3">Données du produit analysées :</h4>
-          <div className="space-y-2 text-sm">
-            <div><strong>Nom :</strong> {productData.name || 'Non défini'}</div>
-            <div><strong>Catégorie :</strong> {productData.category || 'Non définie'}</div>
-            <div><strong>Prix :</strong> {productData.price ? `${productData.price}€` : 'Non défini'}</div>
-            <div><strong>Description :</strong> {productData.description ? `${productData.description.substring(0, 100)}...` : 'Non définie'}</div>
-          </div>
-        </div>
-
         <Button
-          onClick={handleAnalyze}
-          disabled={!productData.name || isAnalyzing}
+          onClick={handleAnalyzePerformance}
+          disabled={!form.watch('name')?.trim() || isAnalyzing}
           className="w-full bg-gradient-to-r from-blue-600 to-indigo-600"
+          type="button"
         >
           {isAnalyzing ? (
             <>
