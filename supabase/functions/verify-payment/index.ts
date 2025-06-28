@@ -61,7 +61,7 @@ serve(async (req) => {
         status: session.payment_status 
       }),
       {
-        headers: { ...corsHeaders, "Content-Type": "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       }
     );

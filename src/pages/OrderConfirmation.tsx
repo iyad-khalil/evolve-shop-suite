@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -59,8 +60,8 @@ const OrderConfirmation: React.FC = () => {
     enabled: !!orderId && !!user
   });
 
-  const isPaymentSuccessful = paymentStatus === 'success' || order.status === 'confirmed';
-  const isPaymentPending = order.status === 'payment_pending';
+  const isPaymentSuccessful = paymentStatus === 'success' || order?.status === 'confirmed';
+  const isPaymentPending = order?.status === 'payment_pending';
 
   if (isLoading) {
     return (

@@ -31,7 +31,7 @@ export interface Order {
   items: OrderItem[];
   totalAmount: number;
   shippingAddress: ShippingAddress;
-  status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  status: 'pending' | 'payment_pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   createdAt: string;
   updatedAt: string;
 }
