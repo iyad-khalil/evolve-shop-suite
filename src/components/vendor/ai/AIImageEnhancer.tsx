@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -85,11 +84,48 @@ export const AIImageEnhancer: React.FC<AIImageEnhancerProps> = ({
   const enhanceImage = async (imageUrl: string) => {
     setIsProcessing(true);
     try {
-      // Simulation de l'amélioration d'image (Remini AI style)
-      await new Promise(resolve => setTimeout(resolve, 4000));
+      // Create a canvas to simulate image enhancement
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const imageElement = await loadImage(blob);
       
-      // Pour la démo, on utilise une version améliorée de l'image
-      const enhancedImageUrl = `${imageUrl}?enhanced=true&timestamp=${Date.now()}`;
+      // Create canvas for processing
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) throw new Error('Could not get canvas context');
+      
+      // Set canvas size to original image size
+      canvas.width = imageElement.naturalWidth;
+      canvas.height = imageElement.naturalHeight;
+      
+      // Draw the original image
+      ctx.drawImage(imageElement, 0, 0);
+      
+      // Apply enhancement filters (simulation)
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+      
+      // Enhance contrast and brightness (simple enhancement simulation)
+      for (let i = 0; i < data.length; i += 4) {
+        // Increase contrast and brightness slightly
+        data[i] = Math.min(255, data[i] * 1.1 + 10);     // Red
+        data[i + 1] = Math.min(255, data[i + 1] * 1.1 + 10); // Green
+        data[i + 2] = Math.min(255, data[i + 2] * 1.1 + 10); // Blue
+        // Alpha channel remains unchanged
+      }
+      
+      ctx.putImageData(imageData, 0, 0);
+      
+      // Convert canvas to blob and then to URL
+      const enhancedBlob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((blob) => {
+          if (blob) resolve(blob);
+          else reject(new Error('Failed to create blob'));
+        }, 'image/png', 1.0);
+      });
+      
+      const enhancedImageUrl = URL.createObjectURL(enhancedBlob);
       
       const newProcessedImages = [...processedImages, enhancedImageUrl];
       setProcessedImages(newProcessedImages);
@@ -97,6 +133,7 @@ export const AIImageEnhancer: React.FC<AIImageEnhancerProps> = ({
       
       toast.success('Image améliorée avec succès !');
     } catch (error) {
+      console.error('Error enhancing image:', error);
       toast.error('Erreur lors de l\'amélioration de l\'image');
     } finally {
       setIsProcessing(false);
