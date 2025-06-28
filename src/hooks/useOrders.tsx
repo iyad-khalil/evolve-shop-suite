@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
@@ -36,11 +36,11 @@ export const useOrders = () => {
       return data.map(order => ({
         id: order.id,
         customerId: order.customer_id,
-        customerEmail: (order as any).customer_email || '',
-        customerName: (order as any).customer_name || '',
-        items: (order as any).items as OrderItem[] || [],
+        customerEmail: order.customer_email || '',
+        customerName: order.customer_name || '',
+        items: (order.items as OrderItem[]) || [],
         totalAmount: Number(order.total_amount),
-        shippingAddress: order.shipping_address as unknown as ShippingAddress,
+        shippingAddress: order.shipping_address as ShippingAddress,
         status: order.status as Order['status'],
         createdAt: order.created_at || '',
         updatedAt: order.updated_at || ''
@@ -48,6 +48,28 @@ export const useOrders = () => {
     },
     enabled: !!user
   });
+
+  // Analyser les items du panier pour identifier les vendeurs
+  const analyzeCartVendors = () => {
+    const vendorGroups: { [vendorId: string]: CartItem[] } = {};
+    const vendorInfo: { [vendorId: string]: { name: string; count: number; total: number } } = {};
+    
+    items.forEach(item => {
+      const vendorId = item.product.vendor_id || 'unknown';
+      if (!vendorGroups[vendorId]) {
+        vendorGroups[vendorId] = [];
+      }
+      vendorGroups[vendorId].push(item);
+      
+      if (!vendorInfo[vendorId]) {
+        vendorInfo[vendorId] = { name: `Vendeur ${vendorId.slice(0, 8)}`, count: 0, total: 0 };
+      }
+      vendorInfo[vendorId].count += item.quantity;
+      vendorInfo[vendorId].total += (item.variant?.price || item.product.price) * item.quantity;
+    });
+
+    return { vendorGroups, vendorInfo };
+  };
 
   // Créer une commande ET créer le paiement en une seule action
   const createOrderAndPayment = async (
@@ -65,15 +87,22 @@ export const useOrders = () => {
     setIsCreatingOrder(true);
 
     try {
-      console.log('🚀 Creating order and payment with items:', items);
+      console.log('🚀 Creating multi-vendor order with items:', items);
 
-      // Étape 1: Créer d'abord la commande
+      // Analyser les vendeurs impliqués
+      const { vendorGroups, vendorInfo } = analyzeCartVendors();
+      const vendorCount = Object.keys(vendorGroups).length;
+      
+      console.log('🏪 Vendors involved:', vendorCount, vendorInfo);
+
+      // Créer les OrderItems avec informations vendeur
       const orderItems: OrderItem[] = items.map((item: CartItem) => ({
         productId: item.product.id,
         productName: item.product.name,
         productImage: item.product.image,
         price: item.variant?.price || item.product.price,
         quantity: item.quantity,
+        vendor_id: item.product.vendor_id,
         variant: item.variant ? {
           id: item.variant.id,
           name: item.variant.name,
@@ -84,6 +113,7 @@ export const useOrders = () => {
       const totalAmount = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
       console.log('💰 Order total:', totalAmount);
+      console.log('🏪 Number of vendors:', vendorCount);
 
       // Créer la commande en base
       const { data: orderData, error: orderError } = await supabase
@@ -105,11 +135,11 @@ export const useOrders = () => {
         throw new Error(`Erreur lors de la création de la commande: ${orderError.message}`);
       }
 
-      console.log('✅ Order created successfully:', orderData.id);
+      console.log('✅ Multi-vendor order created successfully:', orderData.id);
 
       setIsProcessingPayment(true);
 
-      // Étape 2: Créer la session de paiement avec l'ID de commande
+      // Créer la session de paiement avec l'ID de commande
       console.log('💳 Creating payment session for order:', orderData.id);
       
       const { data: paymentData, error: paymentError } = await supabase.functions.invoke('create-payment', {
@@ -132,7 +162,7 @@ export const useOrders = () => {
       
       toast({
         title: "Commande créée avec succès !",
-        description: "Une nouvelle fenêtre s'est ouverte pour finaliser votre paiement.",
+        description: `Votre commande impliquant ${vendorCount} vendeur${vendorCount > 1 ? 's' : ''} a été créée. Une nouvelle fenêtre s'est ouverte pour finaliser votre paiement.`,
       });
 
       // Invalider les requêtes pour rafraîchir les données
@@ -291,11 +321,9 @@ export const useOrders = () => {
   return {
     orders,
     isLoading,
-    createOrder,
     createOrderAndPayment,
-    createPaymentSession,
-    verifyPayment,
     isCreatingOrder,
-    isProcessingPayment
+    isProcessingPayment,
+    analyzeCartVendors
   };
 };
