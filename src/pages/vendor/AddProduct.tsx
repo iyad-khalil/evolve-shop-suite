@@ -53,28 +53,38 @@ export const AddProduct: React.FC = () => {
       return;
     }
 
+    // Validation des champs requis
+    if (!data.name.trim()) {
+      toast.error('Le nom du produit est requis');
+      return;
+    }
+
+    if (data.price <= 0) {
+      toast.error('Le prix doit être supérieur à 0');
+      return;
+    }
+
+    if (data.stock < 0) {
+      toast.error('Le stock ne peut pas être négatif');
+      return;
+    }
+
     setIsLoading(true);
     try {
       console.log('Submitting product data:', data);
       
-      // Inclure les images générées dans les données
-      const productData = {
-        ...data,
-        images: generatedImages.length > 0 ? generatedImages : data.images
-      };
-      
       const { data: insertedProduct, error } = await supabase
         .from('products')
         .insert({
-          name: productData.name,
-          description: productData.description,
-          price: Number(productData.price),
-          original_price: productData.original_price ? Number(productData.original_price) : null,
+          name: data.name.trim(),
+          description: data.description?.trim() || null,
+          price: Number(data.price),
+          original_price: data.original_price && data.original_price > 0 ? Number(data.original_price) : null,
           vendor_id: user.id,
-          category_id: productData.category_id || null,
-          stock: Number(productData.stock),
-          tags: productData.tags,
-          images: productData.images,
+          category_id: data.category_id || null,
+          stock: Number(data.stock),
+          tags: data.tags || [],
+          images: data.images || [],
           is_active: true
         })
         .select()
@@ -97,6 +107,11 @@ export const AddProduct: React.FC = () => {
     }
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    form.handleSubmit(onSubmit)(e);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -108,13 +123,19 @@ export const AddProduct: React.FC = () => {
           </p>
         </div>
         <div className="flex space-x-3">
-          <Button variant="outline" onClick={() => navigate('/vendor/products')}>
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/vendor/products')}
+            disabled={isLoading}
+            type="button"
+          >
             Annuler
           </Button>
           <Button 
-            onClick={form.handleSubmit(onSubmit)} 
+            onClick={handleSubmit}
             disabled={isLoading}
             className="bg-gradient-to-r from-blue-600 to-purple-600"
+            type="button"
           >
             <Save className="w-4 h-4 mr-2" />
             {isLoading ? 'Enregistrement...' : 'Enregistrer'}
@@ -123,7 +144,7 @@ export const AddProduct: React.FC = () => {
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="basic">Informations de base</TabsTrigger>
