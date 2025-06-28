@@ -11,7 +11,7 @@ Cette application suit une architecture moderne full-stack avec séparation clai
 - **Frontend** : Application React SPA (Single Page Application) avec TypeScript
 - **Backend** : Supabase (PostgreSQL + Edge Functions + Auth + Storage)
 - **IA/ML** : Intégration OpenAI GPT + Hugging Face Transformers
-- **Déploiement** : Lovable (frontend) + Supabase (backend/database)
+- **Déploiement** : Frontend moderne + Supabase (backend/database)
 
 ### Architecture des données
 ```
@@ -357,4 +357,4 @@ const { user, session } = useAuth();
 - [ ] **Marketplace extensions** : Plugin system
 - [ ] **Advanced AI** : Recommendations personnalisées
 
-**Développé avec ❤️ en utilisant Lovable, Supabase et les dernières technologies web**
+**Plateforme e-commerce moderne développée avec React, TypeScript, Supabase et intégration IA avancée**
