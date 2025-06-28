@@ -1,18 +1,30 @@
-
-import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrders } from '@/hooks/useOrders';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { CheckCircle, Package, Truck, Home } from 'lucide-react';
+import { CheckCircle, Package, Truck, Home, AlertCircle } from 'lucide-react';
 import { Order } from '@/types/order';
 
 const OrderConfirmation: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const { verifyPayment } = useOrders();
+  
+  const paymentStatus = searchParams.get('payment');
+  const sessionId = searchParams.get('session_id');
+
+  // Vérifier le paiement si on vient de Stripe
+  useEffect(() => {
+    if (paymentStatus === 'success' && sessionId) {
+      verifyPayment(sessionId);
+    }
+  }, [paymentStatus, sessionId, verifyPayment]);
 
   const { data: order, isLoading, error } = useQuery({
     queryKey: ['order', orderId],
@@ -46,6 +58,9 @@ const OrderConfirmation: React.FC = () => {
     },
     enabled: !!orderId && !!user
   });
+
+  const isPaymentSuccessful = paymentStatus === 'success' || order.status === 'confirmed';
+  const isPaymentPending = order.status === 'payment_pending';
 
   if (isLoading) {
     return (
@@ -86,13 +101,23 @@ const OrderConfirmation: React.FC = () => {
         {/* En-tête de confirmation */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <CheckCircle className="w-16 h-16 text-green-500" />
+            {isPaymentSuccessful ? (
+              <CheckCircle className="w-16 h-16 text-green-500" />
+            ) : isPaymentPending ? (
+              <AlertCircle className="w-16 h-16 text-orange-500" />
+            ) : (
+              <AlertCircle className="w-16 h-16 text-red-500" />
+            )}
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Commande confirmée !
+            {isPaymentSuccessful ? 'Commande confirmée !' : 
+             isPaymentPending ? 'Paiement en attente' : 
+             'Commande créée'}
           </h1>
           <p className="text-lg text-gray-600">
-            Merci pour votre commande #{order.id.slice(0, 8)}
+            {isPaymentSuccessful ? `Merci pour votre commande #${order.id.slice(0, 8)}` :
+             isPaymentPending ? `Commande #${order.id.slice(0, 8)} - En attente de paiement` :
+             `Commande #${order.id.slice(0, 8)} créée`}
           </p>
           <p className="text-sm text-gray-500">
             Commandée le {new Date(order.createdAt).toLocaleDateString('fr-FR', {
@@ -103,6 +128,19 @@ const OrderConfirmation: React.FC = () => {
               minute: '2-digit'
             })}
           </p>
+          
+          {/* Statut du paiement */}
+          <div className="mt-4">
+            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+              isPaymentSuccessful ? 'bg-green-100 text-green-800' :
+              isPaymentPending ? 'bg-orange-100 text-orange-800' :
+              'bg-gray-100 text-gray-800'
+            }`}>
+              {isPaymentSuccessful ? '✅ Paiement confirmé' :
+               isPaymentPending ? '⏳ Paiement en attente' :
+               '📝 Commande créée'}
+            </span>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -218,12 +256,29 @@ const OrderConfirmation: React.FC = () => {
                 </div>
 
                 <div className="pt-4 text-xs text-gray-500">
-                  <p className="font-medium mb-2">Prochaines étapes :</p>
+                  <p className="font-medium mb-2">
+                    {isPaymentSuccessful ? 'Prochaines étapes :' : 'Information :'}
+                  </p>
                   <ul className="space-y-1">
-                    <li>• Confirmation par email</li>
-                    <li>• Préparation de votre commande</li>
-                    <li>• Expédition sous 2-3 jours ouvrés</li>
-                    <li>• Livraison à domicile</li>
+                    {isPaymentSuccessful ? (
+                      <>
+                        <li>• Confirmation par email</li>
+                        <li>• Préparation de votre commande</li>
+                        <li>• Expédition sous 2-3 jours ouvrés</li>
+                        <li>• Livraison à domicile</li>
+                      </>
+                    ) : isPaymentPending ? (
+                      <>
+                        <li>• Paiement en cours de vérification</li>
+                        <li>• Vous recevrez une confirmation</li>
+                        <li>• La commande sera traitée après paiement</li>
+                      </>
+                    ) : (
+                      <>
+                        <li>• Commande créée avec succès</li>
+                        <li>• Procédez au paiement pour confirmer</li>
+                      </>
+                    )}
                   </ul>
                 </div>
               </CardContent>

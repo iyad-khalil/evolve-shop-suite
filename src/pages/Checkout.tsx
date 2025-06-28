@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
@@ -9,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ShippingAddress } from '@/types/order';
 import { ArrowLeft, CreditCard, Truck } from 'lucide-react';
 
@@ -16,8 +16,9 @@ const Checkout: React.FC = () => {
   const navigate = useNavigate();
   const { items, total } = useCart();
   const { user } = useAuth();
-  const { createOrder, isCreatingOrder } = useOrders();
+  const { createOrder, isCreatingOrder, createPaymentSession, isProcessingPayment } = useOrders();
 
+  const [currency, setCurrency] = useState<'usd' | 'eur' | 'mad'>('usd');
   const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
     firstName: '',
     lastName: '',
@@ -89,8 +90,14 @@ const Checkout: React.FC = () => {
     }
 
     try {
+      // Créer la commande d'abord
       const orderId = await createOrder(shippingAddress);
-      navigate(`/order-confirmation/${orderId}`);
+      
+      // Puis créer la session de paiement Stripe
+      await createPaymentSession(orderId, currency);
+      
+      // Note: L'utilisateur sera redirigé vers Stripe, 
+      // puis vers la page de confirmation après paiement
     } catch (error) {
       // L'erreur est gérée dans le hook
     }
@@ -102,6 +109,26 @@ const Checkout: React.FC = () => {
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }
   };
+
+  const getCurrencySymbol = (curr: string) => {
+    switch (curr) {
+      case 'usd': return '$';
+      case 'eur': return '€';
+      case 'mad': return 'MAD';
+      default: return '$';
+    }
+  };
+
+  const convertAmount = (amount: number, targetCurrency: string) => {
+    const rates = {
+      usd: 1,
+      eur: 0.85,
+      mad: 10.5
+    };
+    return Math.round(amount * rates[targetCurrency as keyof typeof rates]);
+  };
+
+  const convertedTotal = convertAmount(total, currency);
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -246,6 +273,24 @@ const Checkout: React.FC = () => {
                 <CardTitle>Récapitulatif</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Sélecteur de devise */}
+                <div>
+                  <Label htmlFor="currency">Devise</Label>
+                  <Select value={currency} onValueChange={(value: 'usd' | 'eur' | 'mad') => setCurrency(value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choisir la devise" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="usd">USD ($)</SelectItem>
+                      <SelectItem value="eur">EUR (€)</SelectItem>
+                      <SelectItem value="mad">MAD (درهم)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Separator />
+
+                {/* Items */}
                 {items.map((item) => (
                   <div key={`${item.product.id}-${item.variant?.id || 'default'}`} className="flex items-center space-x-3">
                     <img
@@ -261,7 +306,7 @@ const Checkout: React.FC = () => {
                         </p>
                       )}
                       <p className="text-sm text-gray-600">
-                        {item.quantity} × {((item.variant?.price || item.product.price)).toLocaleString()} €
+                        {item.quantity} × {getCurrencySymbol(currency)}{convertAmount((item.variant?.price || item.product.price), currency).toLocaleString()}
                       </p>
                     </div>
                   </div>
@@ -272,7 +317,7 @@ const Checkout: React.FC = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>Sous-total</span>
-                    <span>{total.toLocaleString()} €</span>
+                    <span>{getCurrencySymbol(currency)}{convertedTotal.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Livraison</span>
@@ -281,7 +326,7 @@ const Checkout: React.FC = () => {
                   <Separator />
                   <div className="flex justify-between font-bold">
                     <span>Total</span>
-                    <span>{total.toLocaleString()} €</span>
+                    <span>{getCurrencySymbol(currency)}{convertedTotal.toLocaleString()}</span>
                   </div>
                 </div>
 
@@ -289,14 +334,14 @@ const Checkout: React.FC = () => {
                   onClick={handleSubmit}
                   className="w-full"
                   size="lg"
-                  disabled={isCreatingOrder}
+                  disabled={isCreatingOrder || isProcessingPayment}
                 >
                   <CreditCard className="w-4 h-4 mr-2" />
-                  {isCreatingOrder ? 'Traitement...' : 'Confirmer la commande'}
+                  {isCreatingOrder ? 'Création...' : isProcessingPayment ? 'Redirection...' : 'Payer avec Stripe'}
                 </Button>
 
                 <p className="text-xs text-gray-500 text-center">
-                  En confirmant votre commande, vous acceptez nos conditions générales de vente.
+                  Paiement sécurisé par Stripe • Mode test
                 </p>
               </CardContent>
             </Card>

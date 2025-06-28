@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,6 +13,7 @@ export const useOrders = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   // Récupérer les commandes de l'utilisateur
   const { data: orders = [], isLoading } = useQuery({
@@ -123,10 +123,82 @@ export const useOrders = () => {
     }
   };
 
+  // Créer une session de paiement Stripe
+  const createPaymentSession = async (orderId: string, currency: 'usd' | 'eur' | 'mad' = 'usd') => {
+    setIsProcessingPayment(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('create-payment', {
+        body: { orderId, currency }
+      });
+
+      if (error) {
+        console.error('Payment session error:', error);
+        throw error;
+      }
+
+      if (data.url) {
+        // Ouvrir Stripe Checkout dans un nouvel onglet
+        window.open(data.url, '_blank');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error creating payment session:', error);
+      toast({
+        title: "Erreur de paiement",
+        description: error instanceof Error ? error.message : "Impossible de créer la session de paiement",
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
+  // Vérifier le statut du paiement
+  const verifyPayment = async (sessionId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-payment', {
+        body: { sessionId }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.status === 'paid') {
+        // Vider le panier après paiement réussi
+        clearCart();
+        
+        // Invalider les requêtes
+        queryClient.invalidateQueries({ queryKey: ['orders'] });
+        
+        toast({
+          title: "Paiement confirmé !",
+          description: "Votre commande a été payée avec succès.",
+        });
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error verifying payment:', error);
+      toast({
+        title: "Erreur de vérification",
+        description: "Impossible de vérifier le statut du paiement",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   return {
     orders,
     isLoading,
     createOrder,
-    isCreatingOrder
+    isCreatingOrder,
+    createPaymentSession,
+    isProcessingPayment,
+    verifyPayment
   };
 };
