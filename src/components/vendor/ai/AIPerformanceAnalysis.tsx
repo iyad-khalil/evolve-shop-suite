@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { BarChart3, Target, AlertCircle, CheckCircle, Lightbulb } from 'lucide-react';
+import { BarChart3, Target, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface ProductFormData {
   name: string;
@@ -62,29 +62,6 @@ export const AIPerformanceAnalysis: React.FC<AIPerformanceAnalysisProps> = ({
     competitiveness: Math.floor(performanceScore * 0.95),
     conversionPotential: Math.floor(performanceScore * 1.05)
   } : null;
-
-  const recommendations = [
-    {
-      type: 'SEO',
-      message: 'Ajoutez des mots-clés spécifiques à votre niche dans la description',
-      priority: 'high'
-    },
-    {
-      type: 'Prix',
-      message: 'Votre prix est compétitif par rapport au marché',
-      priority: 'low'
-    },
-    {
-      type: 'Description',
-      message: 'Développez les bénéfices clients dans votre description',
-      priority: 'medium'
-    },
-    {
-      type: 'Marché',
-      message: 'Fort potentiel dans cette catégorie actuellement',
-      priority: 'high'
-    }
-  ];
 
   return (
     <Card>
@@ -176,38 +153,6 @@ export const AIPerformanceAnalysis: React.FC<AIPerformanceAnalysisProps> = ({
                   <Progress value={analysisResults.conversionPotential} className="h-2" />
                 </CardContent>
               </Card>
-            </div>
-
-            {/* Recommandations */}
-            <div>
-              <h4 className="font-medium mb-3 flex items-center">
-                <Lightbulb className="w-4 h-4 mr-1 text-yellow-600" />
-                Recommandations d'optimisation :
-              </h4>
-              <div className="space-y-2">
-                {recommendations.map((rec, index) => (
-                  <Card key={index} className="bg-gray-50">
-                    <CardContent className="p-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-1">
-                            <Badge variant="outline" className="text-xs">
-                              {rec.type}
-                            </Badge>
-                            <Badge 
-                              variant={rec.priority === 'high' ? 'destructive' : rec.priority === 'medium' ? 'secondary' : 'outline'}
-                              className="text-xs"
-                            >
-                              {rec.priority === 'high' ? 'Haute' : rec.priority === 'medium' ? 'Moyenne' : 'Faible'}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-gray-700">{rec.message}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
             </div>
           </div>
         )}

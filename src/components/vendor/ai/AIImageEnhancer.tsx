@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Upload, Download, Trash2, Wand2, Scissors } from 'lucide-react';
 import { toast } from 'sonner';
+import { removeBackground, loadImage } from '@/utils/backgroundRemoval';
 
 interface AIImageEnhancerProps {
   onImagesProcessed: (images: string[]) => void;
@@ -52,14 +53,21 @@ export const AIImageEnhancer: React.FC<AIImageEnhancerProps> = ({
     }
   };
 
-  const removeBackground = async (imageUrl: string) => {
+  const removeBackgroundReal = async (imageUrl: string) => {
     setIsProcessing(true);
     try {
-      // Simulation de Remove.bg
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // Convert data URL to blob
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
       
-      // Pour la démo, on utilise une version modifiée de l'image
-      const processedImageUrl = `${imageUrl}?bg=removed&timestamp=${Date.now()}`;
+      // Load image
+      const imageElement = await loadImage(blob);
+      
+      // Remove background
+      const processedBlob = await removeBackground(imageElement);
+      
+      // Convert blob to data URL
+      const processedImageUrl = URL.createObjectURL(processedBlob);
       
       const newProcessedImages = [...processedImages, processedImageUrl];
       setProcessedImages(newProcessedImages);
@@ -67,6 +75,7 @@ export const AIImageEnhancer: React.FC<AIImageEnhancerProps> = ({
       
       toast.success('Arrière-plan supprimé avec succès !');
     } catch (error) {
+      console.error('Error removing background:', error);
       toast.error('Erreur lors de la suppression de l\'arrière-plan');
     } finally {
       setIsProcessing(false);
@@ -174,7 +183,7 @@ export const AIImageEnhancer: React.FC<AIImageEnhancerProps> = ({
                         <div className="flex flex-col space-y-2">
                           <Button
                             size="sm"
-                            onClick={() => removeBackground(imageUrl)}
+                            onClick={() => removeBackgroundReal(imageUrl)}
                             disabled={isProcessing}
                             className="bg-red-500 hover:bg-red-600"
                           >
@@ -267,7 +276,7 @@ export const AIImageEnhancer: React.FC<AIImageEnhancerProps> = ({
         </Tabs>
 
         <div className="text-xs text-gray-500 mt-4 space-y-1">
-          <p>🎨 <strong>Suppression de fond :</strong> Retire automatiquement l'arrière-plan pour un rendu professionnel</p>
+          <p>🎨 <strong>Suppression de fond :</strong> Utilise l'IA Hugging Face pour supprimer l'arrière-plan</p>
           <p>✨ <strong>Amélioration qualité :</strong> Augmente la résolution et la netteté de vos images</p>
         </div>
       </CardContent>
