@@ -73,17 +73,17 @@ export const Header: React.FC = () => {
               )}
             </Link>
 
-            {/* User Menu */}
+            {/* User Menu - Toujours afficher quelque chose */}
             {loading ? (
               <div className="animate-pulse">
                 <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
               </div>
-            ) : user ? (
+            ) : user && profile ? (
               <div className="flex items-center space-x-3">
                 <span className="text-sm text-gray-700">
-                  Bonjour, {profile?.first_name || 'Utilisateur'}
+                  Bonjour, {profile.first_name || 'Utilisateur'}
                 </span>
-                {profile?.role === 'vendor' && (
+                {profile.role === 'vendor' && (
                   <Link to="/vendor">
                     <Button variant="outline" size="sm">
                       <Store className="w-4 h-4 mr-2" />
@@ -97,7 +97,7 @@ export const Header: React.FC = () => {
               </div>
             ) : (
               <Link to="/auth">
-                <Button size="sm">
+                <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
                   <User className="w-4 h-4 mr-2" />
                   Connexion
                 </Button>
@@ -135,6 +135,15 @@ export const Header: React.FC = () => {
               <Link to="/categories" className="text-gray-700 hover:text-blue-600 py-2">
                 Catégories
               </Link>
+              {/* Mobile auth button */}
+              {!user && (
+                <Link to="/auth" className="py-2">
+                  <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700">
+                    <User className="w-4 h-4 mr-2" />
+                    Connexion
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         )}
