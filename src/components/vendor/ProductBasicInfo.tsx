@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { ProductImageUpload } from './ProductImageUpload';
+import { supabase } from '@/integrations/supabase/client';
+import { Category } from '@/types';
 
 interface ProductFormData {
   name: string;
@@ -23,15 +25,35 @@ interface ProductBasicInfoProps {
   form: UseFormReturn<ProductFormData>;
 }
 
-const categories = [
-  { id: '1', name: 'Électronique' },
-  { id: '2', name: 'Vêtements' },
-  { id: '3', name: 'Maison & Jardin' },
-  { id: '4', name: 'Livres' },
-  { id: '5', name: 'Beauté' }
-];
-
 export const ProductBasicInfo: React.FC<ProductBasicInfoProps> = ({ form }) => {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('categories')
+          .select('*')
+          .order('name');
+
+        if (error) {
+          console.error('Error fetching categories:', error);
+          return;
+        }
+
+        console.log('Categories fetched:', data);
+        setCategories(data || []);
+      } catch (error) {
+        console.error('Error:', error);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
   return (
     <div className="space-y-6">
       <Card>
@@ -139,7 +161,9 @@ export const ProductBasicInfo: React.FC<ProductBasicInfoProps> = ({ form }) => {
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Sélectionnez une catégorie" />
+                      <SelectValue placeholder={
+                        loadingCategories ? "Chargement..." : "Sélectionnez une catégorie"
+                      } />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
