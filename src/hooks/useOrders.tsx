@@ -171,24 +171,10 @@ export const useOrders = () => {
       }
 
       console.log('✅ Multi-vendor order created successfully:', orderData.id);
+      console.log('🎯 Order created, trigger should automatically call process-vendor-orders');
 
-      // Déclencher la création des commandes vendeur via Edge Function
-      try {
-        console.log('🔄 Processing vendor orders...');
-        const { data: processResult, error: processError } = await supabase.functions.invoke('process-vendor-orders', {
-          body: { record: orderData }
-        });
-
-        if (processError) {
-          console.error('⚠️ Error processing vendor orders:', processError);
-          // Ne pas faire échouer la commande principale pour autant
-        } else {
-          console.log('✅ Vendor orders processed:', processResult);
-        }
-      } catch (processError) {
-        console.error('⚠️ Failed to process vendor orders:', processError);
-        // La commande principale reste valide même si le traitement vendeur échoue
-      }
+      // Attendre un peu pour que le trigger fasse son travail
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
       setIsProcessingPayment(true);
 
@@ -215,11 +201,12 @@ export const useOrders = () => {
       
       toast({
         title: "Commande créée avec succès !",
-        description: `Votre commande impliquant ${vendorCount} vendeur${vendorCount > 1 ? 's' : ''} a été créée. Une nouvelle fenêtre s'est ouverte pour finaliser votre paiement.`,
+        description: `Votre commande impliquant ${vendorCount} vendeur${vendorCount > 1 ? 's' : ''} a été créée. Un trigger automatique traite les commandes vendeur.`,
       });
 
       // Invalider les requêtes pour rafraîchir les données
       queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor-orders'] });
 
     } catch (error) {
       console.error('💥 Error in createOrderAndPayment:', error);
