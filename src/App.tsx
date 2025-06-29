@@ -18,6 +18,8 @@ import Checkout from "./pages/Checkout";
 import OrderConfirmation from "./pages/OrderConfirmation";
 import MyOrders from "./pages/MyOrders";
 import Auth from "./pages/Auth";
+import Contact from "./pages/Contact";
+import Shipping from "./pages/Shipping";
 import VendorDashboard from "./pages/vendor/VendorDashboard";
 import VendorProducts from "./pages/vendor/VendorProducts";
 import AddProduct from "./pages/vendor/AddProduct";
@@ -49,6 +51,8 @@ const App = () => (
                   <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
                   <Route path="/my-orders" element={<MyOrders />} />
                   <Route path="/auth" element={<Auth />} />
+                  <Route path="/contact" element={<Contact />} />
+                  <Route path="/shipping" element={<Shipping />} />
                   
                   {/* Vendor Routes */}
                   <Route path="/vendor" element={<VendorLayout />}>

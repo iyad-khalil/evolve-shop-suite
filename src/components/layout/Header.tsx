@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingCart, User, Search, Menu, X, Store } from 'lucide-react';
+import { ShoppingCart, User, Menu, X, Store } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -47,24 +47,7 @@ export const Header: React.FC = () => {
             <Link to="/categories" className="text-gray-700 hover:text-blue-600 transition-colors">
               Catégories
             </Link>
-            {user && profile?.role === 'customer' && (
-              <Link to="/my-orders" className="text-gray-700 hover:text-blue-600 transition-colors">
-                Mes commandes
-              </Link>
-            )}
           </nav>
-
-          {/* Search Bar */}
-          <div className="hidden md:flex flex-1 max-w-lg mx-8">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Rechercher des produits..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          </div>
 
           {/* Right side */}
           <div className="flex items-center space-x-4">
@@ -80,7 +63,7 @@ export const Header: React.FC = () => {
               </Link>
             )}
 
-            {/* User Menu - Toujours afficher quelque chose */}
+            {/* User Menu */}
             {loading ? (
               <div className="animate-pulse">
                 <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
@@ -131,14 +114,6 @@ export const Header: React.FC = () => {
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t">
             <div className="flex flex-col space-y-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Rechercher..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg"
-                />
-              </div>
               <Link to="/" className="text-gray-700 hover:text-blue-600 py-2">
                 Accueil
               </Link>
@@ -148,11 +123,6 @@ export const Header: React.FC = () => {
               <Link to="/categories" className="text-gray-700 hover:text-blue-600 py-2">
                 Catégories
               </Link>
-              {user && profile?.role === 'customer' && (
-                <Link to="/my-orders" className="text-gray-700 hover:text-blue-600 py-2">
-                  Mes commandes
-                </Link>
-              )}
               {/* Mobile auth button */}
               {!user && (
                 <Link to="/auth" className="py-2">
