@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Star, ShoppingCart } from 'lucide-react';
+import { Star, ShoppingCart, Brain, Cpu } from 'lucide-react';
 import { Product } from '@/types';
 import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
@@ -9,16 +9,20 @@ import { useToast } from '@/hooks/use-toast';
 interface ProductRecommendationsProps {
   recommendations: Product[];
   loading: boolean;
+  isMLEngine?: boolean;
+  isMLReady?: boolean;
 }
 
 export const ProductRecommendations: React.FC<ProductRecommendationsProps> = ({
   recommendations,
-  loading
+  loading,
+  isMLEngine = false,
+  isMLReady = false
 }) => {
   const { addToCart } = useCart();
   const { toast } = useToast();
 
-  console.log('ProductRecommendations: Rendering with', recommendations.length, 'recommendations, loading:', loading);
+  console.log('ProductRecommendations: Rendering with', recommendations.length, 'recommendations, loading:', loading, 'ML Engine:', isMLEngine);
 
   const handleAddToCart = (product: Product) => {
     addToCart(product);
@@ -28,12 +32,43 @@ export const ProductRecommendations: React.FC<ProductRecommendationsProps> = ({
     });
   };
 
+  const getRecommendationIcon = () => {
+    if (isMLEngine) {
+      return isMLReady ? <Brain className="w-4 h-4" /> : <Cpu className="w-4 h-4" />;
+    }
+    return null;
+  };
+
+  const getRecommendationTitle = () => {
+    if (isMLEngine) {
+      return isMLReady 
+        ? "Recommandations IA Avancées" 
+        : "Recommandations IA (Initialisation)";
+    }
+    return "Recommandations de produits";
+  };
+
+  const getRecommendationSubtitle = () => {
+    if (isMLEngine) {
+      return isMLReady 
+        ? "Générées par machine learning (filtrage collaboratif + similarité de contenu)"
+        : "Système ML en cours d'initialisation...";
+    }
+    return "Recommandations générées par notre IA basées sur votre panier";
+  };
+
   if (loading) {
     console.log('ProductRecommendations: Showing loading state');
     return (
       <div className="px-6 py-4 border-t border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Chargement des recommandations...
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <span className={`text-xs font-medium px-2 py-1 rounded-full mr-2 flex items-center gap-1 ${
+            isMLEngine ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+          }`}>
+            {getRecommendationIcon()}
+            IA ML
+          </span>
+          Analyse des recommandations en cours...
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[...Array(3)].map((_, i) => (
@@ -53,13 +88,19 @@ export const ProductRecommendations: React.FC<ProductRecommendationsProps> = ({
     return (
       <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
         <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-          <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full mr-2">
-            IA
+          <span className={`text-xs font-medium px-2 py-1 rounded-full mr-2 flex items-center gap-1 ${
+            isMLEngine ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+          }`}>
+            {getRecommendationIcon()}
+            IA {isMLEngine ? 'ML' : ''}
           </span>
-          Recommandations de produits
+          {getRecommendationTitle()}
         </h3>
         <p className="text-gray-600 text-center py-4">
-          Aucune recommandation disponible pour le moment.
+          {isMLEngine 
+            ? "Le système ML n'a pas trouvé de recommandations pertinentes pour le moment."
+            : "Aucune recommandation disponible pour le moment."
+          }
         </p>
       </div>
     );
@@ -68,24 +109,39 @@ export const ProductRecommendations: React.FC<ProductRecommendationsProps> = ({
   console.log('ProductRecommendations: Displaying', recommendations.length, 'recommendations');
 
   return (
-    <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-        <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full mr-2">
-          IA
+    <div className="px-6 py-4 border-t border-gray-200 bg-gradient-to-r from-gray-50 to-purple-50">
+      <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center">
+        <span className={`text-xs font-medium px-2 py-1 rounded-full mr-2 flex items-center gap-1 ${
+          isMLEngine ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+        }`}>
+          {getRecommendationIcon()}
+          IA {isMLEngine ? 'ML' : ''}
         </span>
-        Produits recommandés pour vous ({recommendations.length})
+        {getRecommendationTitle()} ({recommendations.length})
       </h3>
+      
+      <p className="text-xs text-gray-600 mb-4">
+        {getRecommendationSubtitle()}
+      </p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {recommendations.map((product) => (
-          <div key={product.id} className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md transition-shadow">
+          <div key={product.id} className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md transition-all duration-200 hover:scale-105">
             {/* Image */}
-            <div className="aspect-square overflow-hidden rounded-lg mb-3">
+            <div className="aspect-square overflow-hidden rounded-lg mb-3 relative">
               <img
                 src={product.image}
                 alt={product.name}
                 className="w-full h-full object-cover"
               />
+              {isMLEngine && (
+                <div className="absolute top-2 right-2">
+                  <span className="bg-purple-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                    <Brain className="w-3 h-3" />
+                    ML
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Détails du produit */}
@@ -129,7 +185,11 @@ export const ProductRecommendations: React.FC<ProductRecommendationsProps> = ({
                   size="sm"
                   onClick={() => handleAddToCart(product)}
                   disabled={product.stock === 0}
-                  className="text-xs px-3 py-1"
+                  className={`text-xs px-3 py-1 ${
+                    isMLEngine 
+                      ? 'bg-purple-600 hover:bg-purple-700' 
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
                 >
                   <ShoppingCart className="w-3 h-3 mr-1" />
                   Ajouter
@@ -150,10 +210,6 @@ export const ProductRecommendations: React.FC<ProductRecommendationsProps> = ({
           </div>
         ))}
       </div>
-      
-      <p className="text-xs text-gray-500 mt-4 text-center">
-        Recommandations générées par notre IA basées sur votre panier
-      </p>
     </div>
   );
 };

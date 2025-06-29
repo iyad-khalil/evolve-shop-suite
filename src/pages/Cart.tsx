@@ -1,16 +1,17 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRecommendations } from '@/hooks/useRecommendations';
+import { useMLRecommendations } from '@/hooks/useMLRecommendations';
 import { Button } from '@/components/ui/button';
 import { ProductRecommendations } from '@/components/cart/ProductRecommendations';
 
 export const Cart: React.FC = () => {
   const { items, updateQuantity, removeFromCart, total, clearCart } = useCart();
   const { user } = useAuth();
-  const { recommendations, loading: recommendationsLoading } = useRecommendations(items);
+  const { recommendations, loading: recommendationsLoading, isMLReady } = useMLRecommendations(items);
 
   if (items.length === 0) {
     return (
@@ -124,10 +125,12 @@ export const Cart: React.FC = () => {
             </div>
           </div>
 
-          {/* Recommandations IA */}
+          {/* Recommandations IA ML */}
           <ProductRecommendations 
             recommendations={recommendations}
             loading={recommendationsLoading}
+            isMLEngine={true}
+            isMLReady={isMLReady}
           />
 
           {/* Cart Summary */}
