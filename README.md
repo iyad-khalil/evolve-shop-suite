@@ -34,7 +34,7 @@ Cette application suit une architecture moderne full-stack avec séparation clai
 ### Flux de données principal
 1. **Authentification** : Supabase Auth → JWT tokens → RLS policies
 2. **Produits** : CRUD via Supabase client → PostgreSQL avec RLS
-3. **Commandes** : Création → Stripe payment → Webhook confirmation
+3. **Commandes** : Création → Stripe payment → Webhook confirmation → Distribution vendeurs
 4. **IA** : Frontend → Edge Functions → OpenAI/HuggingFace → Response
 
 ## 🚀 Technologies Utilisées
@@ -191,6 +191,7 @@ La base de données PostgreSQL est déjà configurée avec :
 - **5 vendeurs** de démonstration
 - **24 produits** d'exemple
 - **Politiques RLS** configurées
+- **Tables de gestion des commandes** par vendeur
 
 **Accès aux données de test** :
 - Vendeurs : `vendeur.tech@example.com`, `vendeur.mode@example.com`, etc.
@@ -209,6 +210,7 @@ src/
 │   │   └── CategoryShowcase.tsx
 │   ├── product/              # Gestion produits
 │   ├── vendor/               # Interface vendeur
+│   │   ├── OrderDetailModal.tsx    # Modal détail commande
 │   │   └── ai/               # Fonctionnalités IA
 │   │       ├── AIDescriptionGenerator.tsx
 │   │       ├── AIImageEnhancer.tsx
@@ -222,8 +224,11 @@ src/
 │   ├── useOrders.tsx
 │   ├── useMultiVendorOrders.tsx
 │   ├── useProducts.tsx
-│   └── useVendorProducts.tsx
+│   ├── useVendorProducts.tsx
+│   └── useVendorOrders.tsx   # Gestion commandes vendeur
 ├── pages/                    # Pages principales
+│   └── vendor/
+│       └── VendorOrders.tsx  # Interface gestion commandes
 ├── types/                    # Définitions TypeScript
 ├── utils/                    # Utilitaires
 │   └── backgroundRemoval.ts  # IA suppression arrière-plan
@@ -235,9 +240,10 @@ src/
 
 ### Row Level Security (RLS)
 Chaque table PostgreSQL utilise RLS pour s'assurer que :
-- Les **vendeurs** ne voient que leurs propres produits
+- Les **vendeurs** ne voient que leurs propres produits et commandes
 - Les **clients** ne voient que leurs propres commandes
 - Les **profils** utilisateurs sont isolés par authentification
+- L'**historique des commandes** est protégé par vendeur
 
 ### Authentification JWT
 ```typescript
@@ -257,12 +263,20 @@ const { user, session } = useAuth();
 - ✅ **IA - Génération descriptions** automatique
 - ✅ **IA - Amélioration images** (suppression arrière-plan)
 - ✅ **IA - Analyse prédictive** de performance
-- ✅ **Gestion commandes** et suivi statuts
+- ✅ **Gestion commandes avancée** avec workflow complet
+  - Interface de traitement des commandes (pending → processing → shipped → delivered)
+  - Système de notifications en temps réel pour nouvelles commandes
+  - Gestion des numéros de suivi et transporteurs
+  - Historique détaillé des changements de statut
+  - Génération d'étiquettes d'expédition
+  - Notes et commentaires internes
+  - Statistiques de commandes en temps réel
 
 ### Pour les Clients
 - ✅ **Catalogue multi-vendeurs** avec navigation fluide
 - ✅ **Panier unifié** gérant plusieurs vendeurs
 - ✅ **Système de commande** avec paiement Stripe
+- ✅ **Distribution automatique** des commandes aux vendeurs
 - ✅ **Historique commandes** détaillé
 - ✅ **Authentification** sociale et email
 
@@ -272,6 +286,31 @@ const { user, session } = useAuth();
 - ✅ **Responsive design** : Mobile-first avec Tailwind
 - ✅ **TypeScript strict** : 100% typé avec Zod validation
 - ✅ **Performance** : Lazy loading, code splitting
+- ✅ **Workflow de commandes** : Edge Functions pour distribution automatique
+
+## 🔄 Système de Gestion des Commandes
+
+### Architecture Multi-Vendeurs
+Le système divise automatiquement les commandes clients en sous-commandes par vendeur :
+
+```typescript
+// Flux de traitement des commandes
+Client passe commande → Création commande principale → 
+Edge Function process-vendor-orders → Création commandes vendeur → 
+Notifications temps réel → Interface gestion vendeur
+```
+
+### États des Commandes
+- **pending** : Nouvelle commande en attente
+- **processing** : En cours de préparation
+- **shipped** : Expédiée avec numéro de suivi
+- **delivered** : Livrée au client
+- **cancelled** : Annulée
+
+### Notifications Temps Réel
+- Notification instantanée des nouvelles commandes
+- Mise à jour automatique des statuts
+- Synchronisation en temps réel entre vendeurs et dashboard
 
 ## ⚡ Optimisations et Performance
 
@@ -287,6 +326,7 @@ const { user, session } = useAuth();
 - **Connection pooling** PostgreSQL automatique
 - **RLS policies** optimisées avec index
 - **CDN** intégré pour assets statiques
+- **Triggers automatiques** pour historique des commandes
 
 ### IA/ML
 - **WebGPU acceleration** pour les modèles locaux
