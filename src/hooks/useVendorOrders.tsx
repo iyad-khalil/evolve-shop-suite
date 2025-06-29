@@ -322,7 +322,7 @@ export const useVendorOrders = () => {
     },
     onSuccess: (data) => {
       console.log('🎉 Order update success:', data);
-      queryClient.invalidateQueries({ queryKey: ['vendor-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor-orders'] } as const);
       toast({
         title: "Commande mise à jour",
         description: `Le statut a été changé vers "${data.status}"`,
@@ -365,7 +365,7 @@ export const useVendorOrders = () => {
           console.log('🔔 New record:', payload.new);
           console.log('🔔 Old record:', payload.old);
           
-          queryClient.invalidateQueries({ queryKey: ['vendor-orders'] });
+          queryClient.invalidateQueries({ queryKey: ['vendor-orders'] } as const);
           
           if (payload.eventType === 'INSERT') {
             console.log('🎉 New vendor order received via realtime!');
