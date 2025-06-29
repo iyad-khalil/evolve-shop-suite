@@ -16,7 +16,7 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
 }) => {
   return (
     <div className="space-y-4">
-      <div className="aspect-square overflow-hidden rounded-lg border">
+      <div className="aspect-square overflow-hidden rounded-lg border w-80 h-80">
         <img
           src={images[selectedImage] || images[0]}
           alt={productName}
@@ -29,7 +29,7 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
             <button
               key={index}
               onClick={() => onImageSelect(index)}
-              className={`flex-shrink-0 w-20 h-20 rounded-lg border-2 overflow-hidden ${
+              className={`flex-shrink-0 w-16 h-16 rounded-lg border-2 overflow-hidden ${
                 selectedImage === index ? 'border-blue-500' : 'border-gray-200'
               }`}
             >

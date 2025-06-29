@@ -55,7 +55,7 @@ const VendorProductsTable: React.FC<VendorProductsTableProps> = ({
                         <img
                           src={product.image}
                           alt={product.name}
-                          className="w-12 h-12 rounded-lg object-cover"
+                          className="w-10 h-10 rounded-lg object-cover"
                         />
                         <div>
                           <p className="font-medium text-gray-900">{product.name}</p>

@@ -265,15 +265,20 @@ src/
 │   ├── useProducts.tsx
 │   ├── useVendorProducts.tsx
 │   ├── useVendorOrders.tsx   # Gestion commandes vendeur
-│   ├── useRecommendations.tsx      # Recommandations basiques
-│   └── useMLRecommendations.tsx    # Recommandations ML avancées
+│   ├── useVendorOrdersQuery.tsx      # Requêtes commandes
+│   ├── useVendorOrdersRealtime.tsx   # Temps réel commandes
+│   ├── useVendorOrdersMutations.tsx  # Mutations commandes
+│   ├── useRecommendations.tsx        # Recommandations basiques
+│   └── useMLRecommendations.tsx      # Recommandations ML avancées
 ├── pages/                    # Pages principales
 │   └── vendor/
 │       └── VendorOrders.tsx  # Interface gestion commandes
 ├── types/                    # Définitions TypeScript
+│   └── vendorOrder.ts        # Types commandes vendeur
 ├── utils/                    # Utilitaires
 │   ├── backgroundRemoval.ts  # IA suppression arrière-plan
-│   └── mlRecommendations.ts  # Moteur ML de recommandations
+│   ├── mlRecommendations.ts  # Moteur ML de recommandations
+│   └── orderStats.ts         # Calcul statistiques commandes
 └── integrations/
     └── supabase/             # Configuration Supabase
 ```
@@ -307,6 +312,7 @@ const { user, session } = useAuth();
 - ✅ **IA - Analyse prédictive** de performance
 - ✅ **Gestion commandes avancée** avec workflow complet
   - Interface de traitement des commandes (pending → processing → shipped → delivered)
+  - Système de changement de statut en temps réel avec sélecteur rapide
   - Système de notifications en temps réel pour nouvelles commandes
   - Gestion des numéros de suivi et transporteurs
   - Historique détaillé des changements de statut
@@ -334,6 +340,7 @@ const { user, session } = useAuth();
 - ✅ **Performance** : Lazy loading, code splitting
 - ✅ **Workflow de commandes** : Edge Functions pour distribution automatique
 - ✅ **Moteur ML personnalisé** : Recommandations intelligentes temps réel
+- ✅ **Interface vendeur optimisée** : Navigation simplifiée et intuitive
 
 ## 🔄 Système de Gestion des Commandes
 
@@ -347,17 +354,18 @@ Edge Function process-vendor-orders → Création commandes vendeur →
 Notifications temps réel → Interface gestion vendeur
 ```
 
-### États des Commandes
-- **pending** : Nouvelle commande en attente
-- **processing** : En cours de préparation
-- **shipped** : Expédiée avec numéro de suivi
-- **delivered** : Livrée au client
-- **cancelled** : Annulée
+### États des Commandes avec Gestion Interactive
+- **pending** : Nouvelle commande en attente - changement rapide via sélecteur
+- **processing** : En cours de préparation - mise à jour temps réel
+- **shipped** : Expédiée avec numéro de suivi - génération étiquettes
+- **delivered** : Livrée au client - historique complet
+- **cancelled** : Annulée - traçabilité des raisons
 
 ### Notifications Temps Réel
-- Notification instantanée des nouvelles commandes
-- Mise à jour automatique des statuts
+- Notification instantanée des nouvelles commandes avec badge compteur
+- Mise à jour automatique des statuts via sélecteur rapide
 - Synchronisation en temps réel entre vendeurs et dashboard
+- Interface simplifiée sans boutons inutiles (paramètres/statistiques supprimés)
 
 ## 🤖 Système de Recommandations ML
 
@@ -392,7 +400,7 @@ Scoring hybride intelligent → Recommandations personnalisées
 ### Frontend
 - **Code splitting** automatique par route
 - **Lazy loading** des composants lourds
-- **Image optimization** avec formats modernes
+- **Image optimization** avec formats modernes et tailles réduites
 - **Cache stratégique** avec TanStack Query
 - **Bundle size optimization** avec Vite
 - **Recommandations ML** calculées en temps réel côté client
@@ -412,6 +420,12 @@ Scoring hybride intelligent → Recommandations personnalisées
 - **Matrice de similarité** pré-calculée et mise en cache
 - **Algorithmes optimisés** pour temps de réponse < 100ms
 
+### Interface Utilisateur
+- **Photos produits optimisées** : Tailles réduites pour meilleure performance
+- **Navigation vendeur simplifiée** : Suppression des éléments superflus
+- **Sélecteurs de statut intuitifs** : Modification rapide des commandes
+- **Design responsive** : Adapté mobile et desktop
+
 ## 📝 Bonnes Pratiques
 
 ### Code Quality
@@ -420,6 +434,7 @@ Scoring hybride intelligent → Recommandations personnalisées
 - **Component composition** : Préférer la composition à l'héritage
 - **Custom hooks** : Logique réutilisable extraite
 - **Error boundaries** : Gestion d'erreurs robuste
+- **Architecture modulaire** : Séparation claire des responsabilités
 
 ### Sécurité
 - **RLS policies** : Jamais d'accès direct aux données
@@ -433,7 +448,7 @@ Scoring hybride intelligent → Recommandations personnalisées
 - **Debouncing** : Recherche optimisée
 - **Memoization** : React.memo pour composants coûteux
 - **Virtual scrolling** : Pour les longues listes
-- **Image lazy loading** : Chargement différé
+- **Image lazy loading** : Chargement différé optimisé
 - **ML caching** : Mise en cache des calculs de similarité
 
 ## 🚨 Limitations Connues

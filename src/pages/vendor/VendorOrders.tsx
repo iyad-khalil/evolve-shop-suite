@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Search, Filter, Eye, Truck, Package, Bell, Download } from 'lucide-react';
+import { Search, Filter, Eye, Truck, Package, Bell, Download, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -11,7 +11,7 @@ import { useVendorOrders, VendorOrder } from '@/hooks/useVendorOrders';
 import { OrderDetailModal } from '@/components/vendor/OrderDetailModal';
 
 export const VendorOrders: React.FC = () => {
-  const { orders, isLoading, orderStats } = useVendorOrders();
+  const { orders, isLoading, orderStats, updateOrderStatus, isUpdatingStatus } = useVendorOrders();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState<VendorOrder | null>(null);
@@ -59,6 +59,13 @@ export const VendorOrders: React.FC = () => {
   const handleViewOrder = (order: VendorOrder) => {
     setSelectedOrder(order);
     setIsDetailModalOpen(true);
+  };
+
+  const handleQuickStatusUpdate = (orderId: string, newStatus: VendorOrder['status']) => {
+    updateOrderStatus({
+      orderId,
+      status: newStatus
+    });
   };
 
   const generateShippingLabel = (order: VendorOrder) => {
@@ -256,9 +263,27 @@ ${order.items.map(item => `- ${item.productName} (x${item.quantity})`).join('\n'
                     <p className="font-medium">{order.subtotal.toFixed(2)} €</p>
                   </TableCell>
                   <TableCell>
-                    <Badge className={getStatusColor(order.status)}>
-                      {getStatusLabel(order.status)}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge className={getStatusColor(order.status)}>
+                        {getStatusLabel(order.status)}
+                      </Badge>
+                      <Select
+                        value={order.status}
+                        onValueChange={(newStatus) => handleQuickStatusUpdate(order.id, newStatus as VendorOrder['status'])}
+                        disabled={isUpdatingStatus}
+                      >
+                        <SelectTrigger className="w-auto h-8 text-xs">
+                          <Edit className="w-3 h-3" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">En attente</SelectItem>
+                          <SelectItem value="processing">En traitement</SelectItem>
+                          <SelectItem value="shipped">Expédiée</SelectItem>
+                          <SelectItem value="delivered">Livrée</SelectItem>
+                          <SelectItem value="cancelled">Annulée</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </TableCell>
                   <TableCell>
                     {order.tracking_number ? (

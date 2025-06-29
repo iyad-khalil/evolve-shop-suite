@@ -24,57 +24,6 @@ export const useVendorOrdersQuery = () => {
       console.log('🔍 User ID:', user.id);
       console.log('🔍 User email:', user.email);
       
-      // Test des produits du vendeur d'abord
-      console.log('📦 === TESTING VENDOR PRODUCTS ===');
-      try {
-        const { data: vendorProducts, error: productsError } = await supabase
-          .from('products')
-          .select('id, name, vendor_id')
-          .eq('vendor_id', user.id);
-
-        console.log('📦 Products query result:', { vendorProducts, productsError });
-        console.log('📦 Vendor products count:', vendorProducts?.length || 0);
-        
-        if (productsError) {
-          console.error('❌ Error fetching vendor products:', productsError);
-        } else if (vendorProducts && vendorProducts.length > 0) {
-          console.log('✅ Vendor products found:');
-          vendorProducts.forEach(p => {
-            console.log(`   - Product: ${p.name} (ID: ${p.id}, Vendor: ${p.vendor_id})`);
-          });
-        } else {
-          console.log('⚠️ No products found for this vendor');
-        }
-      } catch (error) {
-        console.error('💥 Exception in products query:', error);
-      }
-
-      // Test de la requête vendor_orders de base
-      console.log('🛍️ === TESTING BASIC VENDOR_ORDERS QUERY ===');
-      try {
-        const { data: basicOrders, error: basicError } = await supabase
-          .from('vendor_orders')
-          .select('*')
-          .eq('vendor_id', user.id);
-
-        console.log('🛍️ Basic vendor_orders query result:', { basicOrders, basicError });
-        console.log('🛍️ Basic orders count:', basicOrders?.length || 0);
-        
-        if (basicError) {
-          console.error('❌ Basic vendor_orders error:', basicError);
-          console.error('❌ Error details:', JSON.stringify(basicError, null, 2));
-        } else if (basicOrders && basicOrders.length > 0) {
-          console.log('✅ Basic vendor orders found:');
-          basicOrders.forEach(o => {
-            console.log(`   - Order: ${o.id} (Vendor: ${o.vendor_id}, Status: ${o.status}, Subtotal: ${o.subtotal})`);
-          });
-        } else {
-          console.log('⚠️ No basic vendor orders found');
-        }
-      } catch (error) {
-        console.error('💥 Exception in basic vendor_orders query:', error);
-      }
-
       // NOUVELLE APPROCHE - Récupérer vendor_orders puis orders séparément
       console.log('🎯 === NEW APPROACH: SEPARATE QUERIES ===');
       
