@@ -67,7 +67,7 @@ export const CategoryShowcase = () => {
             {Array.from({ length: 6 }).map((_, index) => (
               <Card key={index} className="overflow-hidden">
                 <div className="relative">
-                  <Skeleton className="h-48 w-full" />
+                  <Skeleton className="h-36 w-full" />
                 </div>
                 <CardContent className="p-6">
                   <Skeleton className="h-6 w-3/4 mb-2" />
@@ -102,7 +102,7 @@ export const CategoryShowcase = () => {
                   <img
                     src={category.image}
                     alt={category.name}
-                    className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-36 object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                   <div className="absolute inset-0 bg-black bg-opacity-20 group-hover:bg-opacity-30 transition-colors duration-300" />
                 </div>
