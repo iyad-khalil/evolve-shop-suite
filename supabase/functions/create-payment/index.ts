@@ -13,6 +13,26 @@ interface PaymentRequest {
   currency: 'usd' | 'eur' | 'mad';
 }
 
+// Fonction pour valider et nettoyer les URLs d'images
+function getValidImageUrl(imageUrl: string): string | undefined {
+  if (!imageUrl) return undefined;
+  
+  // Si c'est une image base64 ou une URL trop longue, on l'ignore
+  if (imageUrl.startsWith('data:') || imageUrl.length > 2000) {
+    console.log('⚠️ Image URL too long or base64, skipping:', imageUrl.substring(0, 100) + '...');
+    return undefined;
+  }
+  
+  // Vérifier que c'est une URL valide
+  try {
+    new URL(imageUrl);
+    return imageUrl;
+  } catch {
+    console.log('⚠️ Invalid image URL, skipping:', imageUrl);
+    return undefined;
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -119,17 +139,22 @@ serve(async (req) => {
     console.log('💰 Amount calculation:', { baseAmount, currency, finalAmount: amount });
 
     // Créer les line items à partir des items de la commande
-    const lineItems = (order.items as any[]).map(item => ({
-      price_data: {
-        currency: currency,
-        product_data: {
-          name: item.productName,
-          images: item.productImage ? [item.productImage] : [],
+    const lineItems = (order.items as any[]).map(item => {
+      const validImageUrl = getValidImageUrl(item.productImage);
+      
+      return {
+        price_data: {
+          currency: currency,
+          product_data: {
+            name: item.productName,
+            // Seulement inclure les images si elles sont valides
+            ...(validImageUrl && { images: [validImageUrl] }),
+          },
+          unit_amount: Math.round((item.price * exchangeRates[currency]) * 100), // Stripe utilise les centimes
         },
-        unit_amount: Math.round((item.price * exchangeRates[currency]) * 100), // Stripe utilise les centimes
-      },
-      quantity: item.quantity,
-    }));
+        quantity: item.quantity,
+      };
+    });
 
     console.log('🛒 Line items created:', lineItems.length, 'items');
 
