@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingCart, User, Search, Menu, X, Store } from 'lucide-react';
+import { ShoppingCart, User, Search, Menu, X, Store, Receipt } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -47,6 +47,11 @@ export const Header: React.FC = () => {
             <Link to="/categories" className="text-gray-700 hover:text-blue-600 transition-colors">
               Catégories
             </Link>
+            {user && (
+              <Link to="/my-orders" className="text-gray-700 hover:text-blue-600 transition-colors">
+                Mes commandes
+              </Link>
+            )}
           </nav>
 
           {/* Search Bar */}
@@ -83,6 +88,14 @@ export const Header: React.FC = () => {
                 <span className="text-sm text-gray-700">
                   Bonjour, {profile.first_name || 'Utilisateur'}
                 </span>
+                {user && (
+                  <Link to="/my-orders">
+                    <Button variant="outline" size="sm">
+                      <Receipt className="w-4 h-4 mr-2" />
+                      Mes commandes
+                    </Button>
+                  </Link>
+                )}
                 {profile.role === 'vendor' && (
                   <Link to="/vendor">
                     <Button variant="outline" size="sm">
@@ -135,6 +148,11 @@ export const Header: React.FC = () => {
               <Link to="/categories" className="text-gray-700 hover:text-blue-600 py-2">
                 Catégories
               </Link>
+              {user && (
+                <Link to="/my-orders" className="text-gray-700 hover:text-blue-600 py-2">
+                  Mes commandes
+                </Link>
+              )}
               {/* Mobile auth button */}
               {!user && (
                 <Link to="/auth" className="py-2">
