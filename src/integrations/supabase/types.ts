@@ -78,6 +78,44 @@ export type Database = {
           },
         ]
       }
+      order_status_history: {
+        Row: {
+          changed_by: string
+          created_at: string
+          id: string
+          new_status: string
+          notes: string | null
+          old_status: string | null
+          vendor_order_id: string
+        }
+        Insert: {
+          changed_by: string
+          created_at?: string
+          id?: string
+          new_status: string
+          notes?: string | null
+          old_status?: string | null
+          vendor_order_id: string
+        }
+        Update: {
+          changed_by?: string
+          created_at?: string
+          id?: string
+          new_status?: string
+          notes?: string | null
+          old_status?: string | null
+          vendor_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_status_history_vendor_order_id_fkey"
+            columns: ["vendor_order_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           created_at: string | null
@@ -214,6 +252,56 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      vendor_orders: {
+        Row: {
+          created_at: string
+          id: string
+          items: Json
+          notes: string | null
+          order_id: string
+          shipping_carrier: string | null
+          status: string
+          subtotal: number
+          tracking_number: string | null
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          items: Json
+          notes?: string | null
+          order_id: string
+          shipping_carrier?: string | null
+          status?: string
+          subtotal: number
+          tracking_number?: string | null
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          order_id?: string
+          shipping_carrier?: string | null
+          status?: string
+          subtotal?: number
+          tracking_number?: string | null
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vendors: {
         Row: {

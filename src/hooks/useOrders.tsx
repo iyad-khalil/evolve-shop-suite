@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -172,6 +171,24 @@ export const useOrders = () => {
       }
 
       console.log('✅ Multi-vendor order created successfully:', orderData.id);
+
+      // Déclencher la création des commandes vendeur via Edge Function
+      try {
+        console.log('🔄 Processing vendor orders...');
+        const { data: processResult, error: processError } = await supabase.functions.invoke('process-vendor-orders', {
+          body: { record: orderData }
+        });
+
+        if (processError) {
+          console.error('⚠️ Error processing vendor orders:', processError);
+          // Ne pas faire échouer la commande principale pour autant
+        } else {
+          console.log('✅ Vendor orders processed:', processResult);
+        }
+      } catch (processError) {
+        console.error('⚠️ Failed to process vendor orders:', processError);
+        // La commande principale reste valide même si le traitement vendeur échoue
+      }
 
       setIsProcessingPayment(true);
 
