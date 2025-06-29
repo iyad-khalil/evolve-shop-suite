@@ -138,85 +138,56 @@ export const useVendorOrders = () => {
         console.error('💥 Exception in basic vendor_orders query:', error);
       }
 
-      // Test de toutes les commandes (sans filtre vendeur)
-      console.log('🌍 === TESTING ALL VENDOR_ORDERS (NO FILTER) ===');
-      try {
-        const { data: allOrders, error: allError } = await supabase
-          .from('vendor_orders')
-          .select('*')
-          .limit(5);
-
-        console.log('🌍 All vendor_orders query result:', { allOrders, allError });
-        console.log('🌍 All orders count:', allOrders?.length || 0);
-        
-        if (allError) {
-          console.error('❌ All vendor_orders error:', allError);
-        } else if (allOrders && allOrders.length > 0) {
-          console.log('✅ All vendor orders sample:');
-          allOrders.forEach(o => {
-            console.log(`   - Order: ${o.id} (Vendor: ${o.vendor_id}, Status: ${o.status})`);
-            console.log(`     Match current user: ${o.vendor_id === user.id}`);
-          });
-        }
-      } catch (error) {
-        console.error('💥 Exception in all vendor_orders query:', error);
-      }
-
-      // Test de la politique RLS avec raw SQL
-      console.log('🔒 === TESTING RLS POLICIES ===');
-      try {
-        const { data: rlsTest, error: rlsError } = await supabase.rpc('auth_uid');
-        console.log('🔒 RLS auth.uid() test:', { rlsTest, rlsError });
-      } catch (error) {
-        console.log('🔒 RLS test not available (expected)');
-      }
-
-      // Requête principale avec join
-      console.log('🎯 === MAIN QUERY WITH JOIN ===');
-      const { data, error } = await supabase
+      // NOUVELLE APPROCHE - Récupérer vendor_orders puis orders séparément
+      console.log('🎯 === NEW APPROACH: SEPARATE QUERIES ===');
+      
+      // 1. Récupérer les vendor_orders
+      const { data: vendorOrders, error: vendorError } = await supabase
         .from('vendor_orders')
-        .select(`
-          *,
-          orders!inner(
-            customer_name,
-            customer_email,
-            shipping_address
-          )
-        `)
+        .select('*')
         .eq('vendor_id', user.id)
         .order('created_at', { ascending: false });
 
-      console.log('🎯 Main query result:', { data, error });
-      console.log('🎯 Main query data count:', data?.length || 0);
-
-      if (error) {
-        console.error('❌ Main query error:', error);
-        console.error('❌ Full error details:', JSON.stringify(error, null, 2));
-        console.error('❌ Error code:', error.code);
-        console.error('❌ Error message:', error.message);
-        console.error('❌ Error hint:', error.hint);
-        console.error('❌ Error details:', error.details);
-        throw error;
+      if (vendorError) {
+        console.error('❌ Vendor orders error:', vendorError);
+        throw vendorError;
       }
 
-      if (!data || data.length === 0) {
-        console.log('📝 === ANALYSIS: NO DATA RETURNED ===');
-        console.log('📝 Possible reasons:');
-        console.log('   1. No orders have been placed yet');
-        console.log('   2. The process-vendor-orders function failed');
-        console.log('   3. RLS policies are blocking access');
-        console.log('   4. Products don\'t have the correct vendor_id');
-        console.log('   5. User authentication issue');
-        console.log('   6. Database permissions issue');
+      console.log('✅ Vendor orders retrieved:', vendorOrders?.length || 0);
+      
+      if (!vendorOrders || vendorOrders.length === 0) {
+        console.log('📝 No vendor orders found, returning empty array');
         return [];
       }
 
-      const formattedOrders = data.map(order => ({
-        ...order,
-        customer_name: order.orders.customer_name,
-        customer_email: order.orders.customer_email,
-        shipping_address: order.orders.shipping_address
-      })) as VendorOrder[];
+      // 2. Récupérer les order_ids uniques
+      const orderIds = [...new Set(vendorOrders.map(vo => vo.order_id))];
+      console.log('🔍 Unique order IDs to fetch:', orderIds);
+
+      // 3. Récupérer les données des commandes principales
+      const { data: mainOrders, error: mainOrdersError } = await supabase
+        .from('orders')
+        .select('id, customer_name, customer_email, shipping_address')
+        .in('id', orderIds);
+
+      if (mainOrdersError) {
+        console.error('❌ Main orders error:', mainOrdersError);
+        console.error('❌ Will proceed without customer data');
+      }
+
+      console.log('✅ Main orders retrieved:', mainOrders?.length || 0);
+
+      // 4. Combiner les données
+      const formattedOrders: VendorOrder[] = vendorOrders.map(vendorOrder => {
+        const mainOrder = mainOrders?.find(mo => mo.id === vendorOrder.order_id);
+        
+        return {
+          ...vendorOrder,
+          customer_name: mainOrder?.customer_name || 'Client inconnu',
+          customer_email: mainOrder?.customer_email || 'email@inconnu.com',
+          shipping_address: mainOrder?.shipping_address || {}
+        };
+      });
 
       console.log('✅ === FINAL SUCCESS ===');
       console.log('✅ Formatted vendor orders:', formattedOrders.length);
@@ -322,7 +293,7 @@ export const useVendorOrders = () => {
     },
     onSuccess: (data) => {
       console.log('🎉 Order update success:', data);
-      queryClient.invalidateQueries({ queryKey: ['vendor-orders', user?.id] } as const);
+      queryClient.invalidateQueries({ queryKey: ['vendor-orders', user?.id] as const });
       toast({
         title: "Commande mise à jour",
         description: `Le statut a été changé vers "${data.status}"`,
@@ -365,7 +336,7 @@ export const useVendorOrders = () => {
           console.log('🔔 New record:', payload.new);
           console.log('🔔 Old record:', payload.old);
           
-          queryClient.invalidateQueries({ queryKey: ['vendor-orders', user.id] } as const);
+          queryClient.invalidateQueries({ queryKey: ['vendor-orders', user.id] as const });
           
           if (payload.eventType === 'INSERT') {
             console.log('🎉 New vendor order received via realtime!');
