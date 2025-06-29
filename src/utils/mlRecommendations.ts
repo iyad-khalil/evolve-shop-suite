@@ -91,7 +91,7 @@ export class MLRecommendationEngine {
            (popularityScore * popularityWeight);
   }
 
-  // Génération de recommandations avec ML
+  // Génération de recommandations avec ML (filtré par catégorie)
   generateMLRecommendations(
     cartItems: CartItem[],
     allProducts: Product[],
@@ -100,16 +100,33 @@ export class MLRecommendationEngine {
   ): Product[] {
     console.log('MLRecommendationEngine: Generating ML recommendations for', cartItems.length, 'cart items');
     
+    // Extraire les catégories des produits dans le panier
+    const cartCategories = new Set(
+      cartItems
+        .map(item => item.product.category_id)
+        .filter(categoryId => categoryId !== null && categoryId !== undefined)
+    );
+
+    console.log('MLRecommendationEngine: Cart categories:', Array.from(cartCategories));
+
+    // Filtrer les produits candidats par catégorie
+    const candidateProducts = allProducts.filter(product => 
+      cartCategories.has(product.category_id) && 
+      !cartItems.some(item => item.product.id === product.id)
+    );
+
+    console.log('MLRecommendationEngine: Candidate products after category filtering:', candidateProducts.length);
+
     const recommendations: Array<{ product: Product; score: number }> = [];
     
     // Pour chaque produit dans le panier
     for (const cartItem of cartItems) {
       const sourceProduct = cartItem.product;
       
-      // Calculer les scores pour tous les autres produits
-      for (const candidate of allProducts) {
-        // Exclure les produits déjà dans le panier
-        if (cartItems.some(item => item.product.id === candidate.id)) {
+      // Calculer les scores pour les produits candidats de la même catégorie
+      for (const candidate of candidateProducts) {
+        // Vérifier que le candidat est dans la même catégorie que le produit source
+        if (candidate.category_id !== sourceProduct.category_id) {
           continue;
         }
         
@@ -127,7 +144,7 @@ export class MLRecommendationEngine {
           candidate
         );
         
-        console.log(`MLRecommendationEngine: Product ${candidate.name} - Content: ${contentSim.toFixed(3)}, Collaborative: ${collaborativeSim.toFixed(3)}, Hybrid: ${hybridScore.toFixed(3)}`);
+        console.log(`MLRecommendationEngine: Product ${candidate.name} (${candidate.category}) - Content: ${contentSim.toFixed(3)}, Collaborative: ${collaborativeSim.toFixed(3)}, Hybrid: ${hybridScore.toFixed(3)}`);
         
         recommendations.push({
           product: candidate,
@@ -144,8 +161,8 @@ export class MLRecommendationEngine {
       .sort((a, b) => b.score - a.score)
       .slice(0, limit);
     
-    console.log('MLRecommendationEngine: Top recommendations:', 
-      uniqueRecommendations.map(r => `${r.product.name} (${r.score.toFixed(3)})`)
+    console.log('MLRecommendationEngine: Top recommendations (same category):', 
+      uniqueRecommendations.map(r => `${r.product.name} (${r.product.category}) - Score: ${r.score.toFixed(3)}`)
     );
     
     return uniqueRecommendations.map(rec => rec.product);
