@@ -18,6 +18,8 @@ export const ProductRecommendations: React.FC<ProductRecommendationsProps> = ({
   const { addToCart } = useCart();
   const { toast } = useToast();
 
+  console.log('ProductRecommendations: Rendering with', recommendations.length, 'recommendations, loading:', loading);
+
   const handleAddToCart = (product: Product) => {
     addToCart(product);
     toast({
@@ -27,10 +29,11 @@ export const ProductRecommendations: React.FC<ProductRecommendationsProps> = ({
   };
 
   if (loading) {
+    console.log('ProductRecommendations: Showing loading state');
     return (
       <div className="px-6 py-4 border-t border-gray-200">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Produits recommandés
+          Chargement des recommandations...
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[...Array(3)].map((_, i) => (
@@ -46,8 +49,23 @@ export const ProductRecommendations: React.FC<ProductRecommendationsProps> = ({
   }
 
   if (recommendations.length === 0) {
-    return null;
+    console.log('ProductRecommendations: No recommendations found');
+    return (
+      <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full mr-2">
+            IA
+          </span>
+          Recommandations de produits
+        </h3>
+        <p className="text-gray-600 text-center py-4">
+          Aucune recommandation disponible pour le moment.
+        </p>
+      </div>
+    );
   }
+
+  console.log('ProductRecommendations: Displaying', recommendations.length, 'recommendations');
 
   return (
     <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
@@ -55,7 +73,7 @@ export const ProductRecommendations: React.FC<ProductRecommendationsProps> = ({
         <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full mr-2">
           IA
         </span>
-        Produits recommandés pour vous
+        Produits recommandés pour vous ({recommendations.length})
       </h3>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

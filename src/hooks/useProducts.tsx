@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -107,6 +106,7 @@ export const useProducts = () => {
         image: item.images?.[0] || '/placeholder.svg',
         images: item.images || [],
         category: item.categories?.name || 'Non catégorisé',
+        category_id: item.category_id, // S'assurer que category_id est bien passé
         stock: item.stock,
         rating: item.rating || 0,
         reviews: item.reviews_count || 0,

@@ -19,7 +19,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     e.preventDefault();
     e.stopPropagation();
     
-    console.log('Adding product to cart:', product);
+    console.log('ProductCard: Adding product to cart:', {
+      name: product.name,
+      id: product.id,
+      category: product.category,
+      category_id: product.category_id
+    });
     addToCart(product);
     
     toast({
