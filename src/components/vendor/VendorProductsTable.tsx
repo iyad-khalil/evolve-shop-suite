@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Edit, Trash2, Eye } from 'lucide-react';
@@ -20,15 +19,18 @@ const VendorProductsTable: React.FC<VendorProductsTableProps> = ({
 }) => {
   const navigate = useNavigate();
 
+  // Filtrer seulement les produits réels de la base de données
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  console.log('🛍️ Vendor products filtered:', filteredProducts.length);
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Liste des produits</CardTitle>
+        <CardTitle>Liste des produits ({filteredProducts.length})</CardHeader>
       </CardHeader>
       <CardContent>
         {filteredProducts.length > 0 ? (
@@ -147,6 +149,7 @@ const VendorProductsTable: React.FC<VendorProductsTableProps> = ({
           </div>
         ) : (
           <div className="text-center py-8">
+            <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-500 mb-4">
               {searchTerm 
                 ? `Aucun produit trouvé pour "${searchTerm}"`

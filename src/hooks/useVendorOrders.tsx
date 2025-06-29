@@ -39,11 +39,16 @@ export const useVendorOrders = () => {
   const queryClient = useQueryClient();
   const [realTimeChannel, setRealTimeChannel] = useState<any>(null);
 
-  // Récupérer toutes les commandes du vendeur
+  // Récupérer toutes les commandes du vendeur (SANS données statiques)
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['vendor-orders', user?.id],
     queryFn: async () => {
-      if (!user) return [];
+      if (!user) {
+        console.log('❌ No user authenticated');
+        return [];
+      }
+      
+      console.log('🔍 Fetching vendor orders for user:', user.id);
       
       const { data, error } = await supabase
         .from('vendor_orders')
@@ -59,8 +64,14 @@ export const useVendorOrders = () => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching vendor orders:', error);
+        console.error('❌ Error fetching vendor orders:', error);
         throw error;
+      }
+
+      console.log('✅ Vendor orders fetched:', data?.length || 0);
+      
+      if (!data || data.length === 0) {
+        return [];
       }
 
       return data.map(order => ({

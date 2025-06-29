@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,16 +15,19 @@ const OrderConfirmation: React.FC = () => {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { verifyPayment } = useOrders();
+  const [paymentVerified, setPaymentVerified] = useState(false);
   
   const paymentStatus = searchParams.get('payment');
   const sessionId = searchParams.get('session_id');
 
-  // Vérifier le paiement si on vient de Stripe
+  // Vérifier le paiement si on vient de Stripe, mais seulement une fois
   useEffect(() => {
-    if (paymentStatus === 'success' && sessionId) {
+    if (paymentStatus === 'success' && sessionId && !paymentVerified) {
+      console.log('🔄 Verifying payment for session:', sessionId);
+      setPaymentVerified(true);
       verifyPayment(sessionId);
     }
-  }, [paymentStatus, sessionId, verifyPayment]);
+  }, [paymentStatus, sessionId, verifyPayment, paymentVerified]);
 
   const { data: order, isLoading, error } = useQuery({
     queryKey: ['order', orderId],
