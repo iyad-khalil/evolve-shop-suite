@@ -71,7 +71,7 @@ export const useVendorOrders = () => {
 
   // Récupérer toutes les commandes du vendeur
   const { data: orders = [], isLoading, error } = useQuery({
-    queryKey: ['vendor-orders', user?.id],
+    queryKey: ['vendor-orders', user?.id] as const,
     queryFn: async () => {
       console.log('🚀 === DEBUG QUERY EXECUTION ===');
       console.log('🚀 Starting vendor orders query');
@@ -322,7 +322,7 @@ export const useVendorOrders = () => {
     },
     onSuccess: (data) => {
       console.log('🎉 Order update success:', data);
-      queryClient.invalidateQueries({ queryKey: ['vendor-orders'] } as const);
+      queryClient.invalidateQueries({ queryKey: ['vendor-orders', user?.id] } as const);
       toast({
         title: "Commande mise à jour",
         description: `Le statut a été changé vers "${data.status}"`,
@@ -365,7 +365,7 @@ export const useVendorOrders = () => {
           console.log('🔔 New record:', payload.new);
           console.log('🔔 Old record:', payload.old);
           
-          queryClient.invalidateQueries({ queryKey: ['vendor-orders'] } as const);
+          queryClient.invalidateQueries({ queryKey: ['vendor-orders', user.id] } as const);
           
           if (payload.eventType === 'INSERT') {
             console.log('🎉 New vendor order received via realtime!');
