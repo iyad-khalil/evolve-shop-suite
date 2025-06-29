@@ -39,7 +39,7 @@ export const useVendorOrders = () => {
   const queryClient = useQueryClient();
   const [realTimeChannel, setRealTimeChannel] = useState<any>(null);
 
-  // Récupérer toutes les commandes du vendeur (SANS données statiques)
+  // Récupérer toutes les commandes du vendeur
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['vendor-orders', user?.id],
     queryFn: async () => {
@@ -81,7 +81,8 @@ export const useVendorOrders = () => {
         shipping_address: order.orders.shipping_address
       })) as VendorOrder[];
     },
-    enabled: !!user
+    enabled: !!user,
+    refetchInterval: 30000, // Rafraîchir toutes les 30 secondes
   });
 
   // Récupérer l'historique des statuts pour une commande
