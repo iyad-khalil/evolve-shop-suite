@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Package, ShoppingBag, BarChart3, Home, LogOut } from 'lucide-react';
+import { Package, ShoppingBag, Home, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -32,9 +32,9 @@ const VendorLayout: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="fixed inset-0 bg-gray-50 overflow-hidden">
       {/* Sidebar */}
-      <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg">
+      <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg z-10">
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center justify-center h-16 px-4 border-b">
@@ -80,8 +80,8 @@ const VendorLayout: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="ml-64">
-        <main className="p-8">
+      <div className="ml-64 h-full overflow-auto">
+        <main className="p-8 h-full">
           <Outlet />
         </main>
       </div>
