@@ -107,9 +107,9 @@ const MyOrders = () => {
             
             <div class="order-info">
               <p><strong>Numéro de commande:</strong> ${order.id}</p>
-              <p><strong>Date:</strong> ${format(new Date(order.createdAt), 'dd MMMM yyyy à HH:mm', { locale: fr })}</p>
-              <p><strong>Client:</strong> ${order.customerName}</p>
-              <p><strong>Email:</strong> ${order.customerEmail}</p>
+              <p><strong>Date:</strong> ${format(new Date(order.created_at), 'dd MMMM yyyy à HH:mm', { locale: fr })}</p>
+              <p><strong>Client:</strong> ${order.customer_name}</p>
+              <p><strong>Email:</strong> ${order.customer_email}</p>
               <p><strong>Statut:</strong> ${getStatusText(order.status)}</p>
             </div>
 
@@ -135,7 +135,7 @@ const MyOrders = () => {
             </table>
 
             <div class="total">
-              <p>Total: ${order.totalAmount.toFixed(2)} €</p>
+              <p>Total: ${order.total_amount.toFixed(2)} €</p>
             </div>
 
             <div class="footer">
@@ -191,7 +191,7 @@ const MyOrders = () => {
                       Commande #{order.id.slice(0, 8)}
                     </CardTitle>
                     <p className="text-sm text-gray-600 mt-1">
-                      Passée le {format(new Date(order.createdAt), 'dd MMMM yyyy à HH:mm', { locale: fr })}
+                      Passée le {format(new Date(order.created_at), 'dd MMMM yyyy à HH:mm', { locale: fr })}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
@@ -223,7 +223,7 @@ const MyOrders = () => {
                         <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
                           <div className="flex items-center space-x-3">
                             <img
-                              src={item.productImage}
+                              src={item.productImage || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=100&h=100&fit=crop'}
                               alt={item.productName}
                               className="w-12 h-12 rounded-lg object-cover"
                             />
@@ -245,17 +245,17 @@ const MyOrders = () => {
                   <div>
                     <h4 className="font-medium text-gray-900 mb-2">Adresse de livraison</h4>
                     <div className="text-sm text-gray-600">
-                      <p>{order.shippingAddress.firstName} {order.shippingAddress.lastName}</p>
-                      <p>{order.shippingAddress.street}</p>
-                      <p>{order.shippingAddress.postalCode} {order.shippingAddress.city}</p>
-                      <p>{order.shippingAddress.country}</p>
+                      <p>{order.shipping_address.firstName} {order.shipping_address.lastName}</p>
+                      <p>{order.shipping_address.street}</p>
+                      <p>{order.shipping_address.postalCode} {order.shipping_address.city}</p>
+                      <p>{order.shipping_address.country}</p>
                     </div>
                   </div>
 
                   {/* Total */}
                   <div className="flex justify-between items-center pt-4 border-t border-gray-200">
                     <span className="text-lg font-medium text-gray-900">Total</span>
-                    <span className="text-xl font-bold text-gray-900">{order.totalAmount.toFixed(2)} €</span>
+                    <span className="text-xl font-bold text-gray-900">{order.total_amount.toFixed(2)} €</span>
                   </div>
                 </div>
               </CardContent>
