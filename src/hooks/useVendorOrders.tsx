@@ -40,15 +40,31 @@ export const useVendorOrders = () => {
   const [realTimeChannel, setRealTimeChannel] = useState<any>(null);
 
   // Récupérer toutes les commandes du vendeur
-  const { data: orders = [], isLoading } = useQuery({
+  const { data: orders = [], isLoading, error } = useQuery({
     queryKey: ['vendor-orders', user?.id],
     queryFn: async () => {
       if (!user) {
-        console.log('❌ No user authenticated');
+        console.log('❌ No user authenticated for vendor orders');
         return [];
       }
       
       console.log('🔍 Fetching vendor orders for user:', user.id);
+      console.log('📧 User email:', user.email);
+      
+      // D'abord vérifier les produits du vendeur pour debugging
+      const { data: vendorProducts, error: productsError } = await supabase
+        .from('products')
+        .select('id, name, vendor_id')
+        .eq('vendor_id', user.id);
+
+      if (productsError) {
+        console.error('❌ Error fetching vendor products:', productsError);
+      } else {
+        console.log('📦 Vendor products found:', vendorProducts?.length || 0);
+        vendorProducts?.forEach(p => {
+          console.log(`- Product: ${p.name} (ID: ${p.id}, Vendor: ${p.vendor_id})`);
+        });
+      }
       
       const { data, error } = await supabase
         .from('vendor_orders')
@@ -65,25 +81,53 @@ export const useVendorOrders = () => {
 
       if (error) {
         console.error('❌ Error fetching vendor orders:', error);
+        console.error('❌ Full error details:', JSON.stringify(error, null, 2));
         throw error;
       }
 
-      console.log('✅ Vendor orders fetched:', data?.length || 0);
+      console.log('✅ Raw vendor orders data:', data);
+      console.log('📊 Vendor orders count:', data?.length || 0);
       
       if (!data || data.length === 0) {
+        console.log('📝 No vendor orders found. This could mean:');
+        console.log('   1. No orders have been placed yet');
+        console.log('   2. The process-vendor-orders function failed');
+        console.log('   3. RLS policies are blocking access');
+        console.log('   4. Products don\'t have the correct vendor_id');
         return [];
       }
 
-      return data.map(order => ({
+      const formattedOrders = data.map(order => ({
         ...order,
         customer_name: order.orders.customer_name,
         customer_email: order.orders.customer_email,
         shipping_address: order.orders.shipping_address
       })) as VendorOrder[];
+
+      console.log('✅ Formatted vendor orders:', formattedOrders.length);
+      formattedOrders.forEach(order => {
+        console.log(`- Order ${order.id}: ${order.customer_name} - ${order.subtotal}€ (${order.status})`);
+      });
+      
+      return formattedOrders;
     },
     enabled: !!user,
     refetchInterval: 30000, // Rafraîchir toutes les 30 secondes
+    retry: 3,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
+
+  // Log des erreurs de requête
+  useEffect(() => {
+    if (error) {
+      console.error('🚨 Vendor orders query error:', error);
+      toast({
+        title: "Erreur de chargement",
+        description: "Impossible de charger les commandes vendeur",
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
 
   // Récupérer l'historique des statuts pour une commande
   const getOrderHistory = async (vendorOrderId: string): Promise<OrderStatusHistory[]> => {
@@ -154,6 +198,8 @@ export const useVendorOrders = () => {
   useEffect(() => {
     if (!user) return;
 
+    console.log('🔄 Setting up real-time channel for vendor:', user.id);
+
     const channel = supabase
       .channel('vendor-orders-realtime')
       .on(
@@ -165,10 +211,11 @@ export const useVendorOrders = () => {
           filter: `vendor_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('Real-time update received:', payload);
+          console.log('🔔 Real-time update received:', payload);
           queryClient.invalidateQueries({ queryKey: ['vendor-orders'] });
           
           if (payload.eventType === 'INSERT') {
+            console.log('🎉 New vendor order received!');
             toast({
               title: "Nouvelle commande !",
               description: "Une nouvelle commande vient d'arriver",
@@ -176,11 +223,14 @@ export const useVendorOrders = () => {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 Real-time subscription status:', status);
+      });
 
     setRealTimeChannel(channel);
 
     return () => {
+      console.log('🔌 Cleaning up real-time channel');
       if (channel) {
         supabase.removeChannel(channel);
       }
@@ -198,9 +248,24 @@ export const useVendorOrders = () => {
     totalRevenue: orders.reduce((sum, order) => sum + order.subtotal, 0)
   };
 
+  // Debug info
+  useEffect(() => {
+    if (user) {
+      console.log('📊 Vendor Orders Debug Summary:');
+      console.log('- User ID:', user.id);
+      console.log('- Orders loaded:', orders.length);
+      console.log('- Is loading:', isLoading);
+      console.log('- Has error:', !!error);
+      if (error) {
+        console.log('- Error details:', error);
+      }
+    }
+  }, [user, orders, isLoading, error]);
+
   return {
     orders,
     isLoading,
+    error,
     orderStats,
     updateOrderStatus: updateOrderStatusMutation.mutate,
     isUpdatingStatus: updateOrderStatusMutation.isPending,
