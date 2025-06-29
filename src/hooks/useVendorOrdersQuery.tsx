@@ -114,12 +114,14 @@ export const useVendorOrdersQuery = () => {
 
       console.log('✅ Main orders retrieved:', mainOrders?.length || 0);
 
-      // 4. Combiner les données
+      // 4. Combiner les données avec le type casting approprié
       const formattedOrders: VendorOrder[] = vendorOrders.map(vendorOrder => {
         const mainOrder = mainOrders?.find(mo => mo.id === vendorOrder.order_id);
         
         return {
           ...vendorOrder,
+          // Type casting pour s'assurer que le statut correspond à notre type
+          status: vendorOrder.status as VendorOrder['status'],
           items: Array.isArray(vendorOrder.items) ? vendorOrder.items : [],
           customer_name: mainOrder?.customer_name || 'Client inconnu',
           customer_email: mainOrder?.customer_email || 'email@inconnu.com',
