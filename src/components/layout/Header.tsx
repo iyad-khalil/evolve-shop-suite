@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingCart, User, Search, Menu, X, Store, Receipt } from 'lucide-react';
+import { ShoppingCart, User, Search, Menu, X, Store } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -47,7 +47,7 @@ export const Header: React.FC = () => {
             <Link to="/categories" className="text-gray-700 hover:text-blue-600 transition-colors">
               Catégories
             </Link>
-            {user && (
+            {user && profile?.role === 'customer' && (
               <Link to="/my-orders" className="text-gray-700 hover:text-blue-600 transition-colors">
                 Mes commandes
               </Link>
@@ -68,15 +68,17 @@ export const Header: React.FC = () => {
 
           {/* Right side */}
           <div className="flex items-center space-x-4">
-            {/* Cart */}
-            <Link to="/cart" className="relative p-2 text-gray-700 hover:text-blue-600 transition-colors">
-              <ShoppingCart className="w-6 h-6" />
-              {itemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {itemCount}
-                </span>
-              )}
-            </Link>
+            {/* Cart - Only show for customers */}
+            {profile?.role === 'customer' && (
+              <Link to="/cart" className="relative p-2 text-gray-700 hover:text-blue-600 transition-colors">
+                <ShoppingCart className="w-6 h-6" />
+                {itemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {itemCount}
+                  </span>
+                )}
+              </Link>
+            )}
 
             {/* User Menu - Toujours afficher quelque chose */}
             {loading ? (
@@ -88,19 +90,17 @@ export const Header: React.FC = () => {
                 <span className="text-sm text-gray-700">
                   Bonjour, {profile.first_name || 'Utilisateur'}
                 </span>
-                {user && (
-                  <Link to="/my-orders">
-                    <Button variant="outline" size="sm">
-                      <Receipt className="w-4 h-4 mr-2" />
-                      Mes commandes
-                    </Button>
-                  </Link>
-                )}
-                {profile.role === 'vendor' && (
+                {profile.role === 'vendor' ? (
                   <Link to="/vendor">
                     <Button variant="outline" size="sm">
                       <Store className="w-4 h-4 mr-2" />
                       Mon espace vendeur
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link to="/my-orders">
+                    <Button variant="outline" size="sm">
+                      Mes commandes
                     </Button>
                   </Link>
                 )}
@@ -148,7 +148,7 @@ export const Header: React.FC = () => {
               <Link to="/categories" className="text-gray-700 hover:text-blue-600 py-2">
                 Catégories
               </Link>
-              {user && (
+              {user && profile?.role === 'customer' && (
                 <Link to="/my-orders" className="text-gray-700 hover:text-blue-600 py-2">
                   Mes commandes
                 </Link>
