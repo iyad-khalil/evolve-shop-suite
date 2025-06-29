@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
@@ -28,7 +29,7 @@ const Checkout: React.FC = () => {
     street: '',
     city: '',
     postalCode: '',
-    country: 'France'
+    country: 'Maroc' // Fixé sur Maroc
   });
 
   const [errors, setErrors] = useState<Partial<ShippingAddress>>({});
@@ -108,6 +109,11 @@ const Checkout: React.FC = () => {
   };
 
   const handleInputChange = (field: keyof ShippingAddress, value: string) => {
+    // Empêcher la modification du pays
+    if (field === 'country') {
+      return;
+    }
+    
     setShippingAddress(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
@@ -261,8 +267,14 @@ const Checkout: React.FC = () => {
                       <Input
                         id="country"
                         value={shippingAddress.country}
-                        onChange={(e) => handleInputChange('country', e.target.value)}
+                        readOnly
+                        disabled
+                        className="bg-gray-100 cursor-not-allowed"
+                        title="Le pays est fixé sur le Maroc"
                       />
+                      <p className="text-xs text-gray-500 mt-1">
+                        🇲🇦 Livraison uniquement au Maroc
+                      </p>
                     </div>
                   </div>
                 </form>
