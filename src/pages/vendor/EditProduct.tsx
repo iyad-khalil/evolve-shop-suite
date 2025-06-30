@@ -4,11 +4,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
-import { Save, ArrowLeft } from 'lucide-react';
+import { Save, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProductBasicInfo } from '@/components/vendor/ProductBasicInfo';
+import { ProductEditPreview } from '@/components/vendor/ProductEditPreview';
 
 interface ProductFormData {
   name: string;
@@ -27,6 +28,7 @@ export const EditProduct: React.FC = () => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProduct, setLoadingProduct] = useState(true);
+  const [showPreview, setShowPreview] = useState(true);
   
   const form = useForm<ProductFormData>({
     defaultValues: {
@@ -64,6 +66,7 @@ export const EditProduct: React.FC = () => {
       }
 
       if (data) {
+        console.log('Product loaded for editing:', data);
         form.reset({
           name: data.name,
           description: data.description || '',
@@ -153,10 +156,12 @@ export const EditProduct: React.FC = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="animate-pulse">
           <div className="h-8 bg-gray-200 rounded mb-4 w-1/3"></div>
-          <div className="space-y-4">
-            <div className="h-4 bg-gray-200 rounded w-full"></div>
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-4">
+              <div className="h-64 bg-gray-200 rounded"></div>
+              <div className="h-32 bg-gray-200 rounded"></div>
+            </div>
+            <div className="h-96 bg-gray-200 rounded"></div>
           </div>
         </div>
       </div>
@@ -179,11 +184,19 @@ export const EditProduct: React.FC = () => {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Modifier le produit</h1>
             <p className="text-gray-600 mt-1">
-              Modifiez les informations de votre produit
+              Modifiez les informations et les images de votre produit
             </p>
           </div>
         </div>
         <div className="flex space-x-3">
+          <Button 
+            variant="outline" 
+            onClick={() => setShowPreview(!showPreview)}
+            className="hidden lg:flex"
+          >
+            {showPreview ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+            {showPreview ? 'Masquer aperçu' : 'Afficher aperçu'}
+          </Button>
           <Button 
             variant="outline" 
             onClick={() => navigate('/vendor/products')}
@@ -201,11 +214,35 @@ export const EditProduct: React.FC = () => {
         </div>
       </div>
 
+      {/* Formulaire avec aperçu */}
       <Form {...form}>
         <form onSubmit={handleSubmit}>
-          <ProductBasicInfo form={form} />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Formulaire principal */}
+            <div className="lg:col-span-2">
+              <ProductBasicInfo form={form} />
+            </div>
+
+            {/* Aperçu (sur desktop) */}
+            {showPreview && (
+              <div className="hidden lg:block">
+                <ProductEditPreview form={form} />
+              </div>
+            )}
+          </div>
         </form>
       </Form>
+
+      {/* Conseils pour l'édition */}
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <h3 className="font-medium text-yellow-800 mb-2">💡 Conseils pour optimiser votre produit :</h3>
+        <ul className="text-sm text-yellow-700 space-y-1">
+          <li>• Utilisez des images de haute qualité pour attirer plus de clients</li>
+          <li>• Rédigez une description détaillée avec les caractéristiques importantes</li>
+          <li>• Définissez un prix compétitif en regardant les produits similaires</li>
+          <li>• Maintenez votre stock à jour pour éviter les ruptures</li>
+        </ul>
+      </div>
     </div>
   );
 };

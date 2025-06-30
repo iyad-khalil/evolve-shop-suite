@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { ProductImageUpload } from './ProductImageUpload';
+import { ProductImageManager } from './ProductImageManager';
 import { supabase } from '@/integrations/supabase/client';
 import { Category } from '@/types';
 
@@ -181,8 +181,8 @@ export const ProductBasicInfo: React.FC<ProductBasicInfoProps> = ({ form }) => {
         </CardContent>
       </Card>
 
-      {/* Composant d'upload d'images */}
-      <ProductImageUpload form={form} />
+      {/* Nouveau gestionnaire d'images */}
+      <ProductImageManager form={form} />
     </div>
   );
 };
