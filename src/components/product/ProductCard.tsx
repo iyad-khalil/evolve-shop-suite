@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Star, ShoppingCart } from 'lucide-react';
 import { Product } from '@/types';
 import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
@@ -13,11 +14,32 @@ interface ProductCardProps {
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { addToCart } = useCart();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // Vérifier si l'utilisateur est connecté
+    if (!user) {
+      toast({
+        title: "Connexion requise",
+        description: "Connectez-vous en tant que client pour acheter des produits.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Vérifier si l'utilisateur est un vendeur
+    if (profile?.role === 'vendor') {
+      toast({
+        title: "Action non autorisée",
+        description: "Les vendeurs ne peuvent pas acheter de produits. Veuillez vous connecter avec un compte client.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     console.log('ProductCard: Adding product to cart:', {
       name: product.name,
@@ -32,6 +54,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       description: `${product.name} a été ajouté à votre panier.`,
     });
   };
+
+  const canAddToCart = user && profile?.role !== 'vendor' && product.stock > 0;
+  const showLoginMessage = !user;
+  const isVendor = profile?.role === 'vendor';
 
   return (
     <Link to={`/product/${product.id}`} className="group">
@@ -94,7 +120,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             )}
           </div>
 
-          {/* Stock status */}
+          {/* Stock status and Add to cart */}
           <div className="flex items-center justify-between">
             <span className={`text-xs px-2 py-1 rounded-full ${
               product.stock > 0 
@@ -107,8 +133,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             <Button
               size="sm"
               onClick={handleAddToCart}
-              disabled={product.stock === 0}
-              className="group-hover:bg-blue-600 transition-colors"
+              disabled={!canAddToCart}
+              className={`transition-colors ${
+                canAddToCart 
+                  ? 'group-hover:bg-blue-600' 
+                  : 'opacity-50 cursor-not-allowed'
+              }`}
+              title={
+                showLoginMessage 
+                  ? "Connectez-vous pour acheter" 
+                  : isVendor 
+                  ? "Les vendeurs ne peuvent pas acheter" 
+                  : product.stock === 0 
+                  ? "Produit en rupture de stock" 
+                  : "Ajouter au panier"
+              }
             >
               <ShoppingCart className="w-4 h-4" />
             </Button>

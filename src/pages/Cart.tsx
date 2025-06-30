@@ -10,8 +10,39 @@ import { ProductRecommendations } from '@/components/cart/ProductRecommendations
 
 export const Cart: React.FC = () => {
   const { items, updateQuantity, removeFromCart, total, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { recommendations, loading: recommendationsLoading, isMLReady } = useMLRecommendations(items);
+
+  // Vérification si l'utilisateur est un vendeur
+  const isVendor = profile?.role === 'vendor';
+
+  if (isVendor) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center py-12">
+            <ShoppingBag className="mx-auto h-12 w-12 text-orange-400 mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Accès restreint</h2>
+            <p className="text-gray-600 mb-8">
+              Les comptes vendeurs ne peuvent pas effectuer d'achats. Veuillez vous connecter avec un compte client pour accéder au panier.
+            </p>
+            <div className="space-y-4">
+              <Link to="/products">
+                <Button size="lg" variant="outline">
+                  Parcourir les produits
+                </Button>
+              </Link>
+              <Link to="/vendor">
+                <Button size="lg">
+                  Accéder à l'espace vendeur
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (

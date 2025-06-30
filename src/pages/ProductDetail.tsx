@@ -17,11 +17,10 @@ const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addToCart } = useCart();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
-  const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -85,15 +84,22 @@ const ProductDetail: React.FC = () => {
   };
 
   const handleAddToCart = () => {
+    // Vérifier si l'utilisateur est connecté
+    if (!user) {
+      toast.error('Connectez-vous en tant que client pour acheter des produits.');
+      return;
+    }
+
+    // Vérifier si l'utilisateur est un vendeur
+    if (profile?.role === 'vendor') {
+      toast.error('Les vendeurs ne peuvent pas acheter de produits. Veuillez vous connecter avec un compte client.');
+      return;
+    }
+
     if (product && product.stock > 0) {
       addToCart(product);
       toast.success('Produit ajouté au panier !');
     }
-  };
-
-  const handleToggleFavorite = () => {
-    setIsFavorite(!isFavorite);
-    toast.success(isFavorite ? 'Retiré des favoris' : 'Ajouté aux favoris');
   };
 
   const handleShare = () => {
@@ -137,6 +143,10 @@ const ProductDetail: React.FC = () => {
     );
   }
 
+  const isLoggedIn = !!user;
+  const isVendor = profile?.role === 'vendor';
+  const canAddToCart = isLoggedIn && !isVendor && product.stock > 0;
+
   return (
     <div className="container mx-auto px-4 py-8">
       <ProductBreadcrumb
@@ -157,10 +167,11 @@ const ProductDetail: React.FC = () => {
           <ProductInfo product={product} />
           <ProductActions
             product={product}
-            isFavorite={isFavorite}
             onAddToCart={handleAddToCart}
-            onToggleFavorite={handleToggleFavorite}
             onShare={handleShare}
+            canAddToCart={canAddToCart}
+            isVendor={isVendor}
+            isLoggedIn={isLoggedIn}
           />
         </div>
       </div>
